@@ -4,34 +4,34 @@ English | [简体中文](README.zh-CN.md)
 
 > Structured item-by-item work report and code review retrospective: the agent reports completed changes like an engineer briefing a technical lead, answers interrogations with code evidence, logs directives, and produces a consolidated Rectification List (`整改清单`).
 
-| Field | Value |
-|-------|-------|
-| Status | `experimental` |
-| Version | 1.0.0 |
-| Categories | Agent workflow · Engineering governance · Software engineering |
-| Verified on | Antigravity |
-
-## The problem
+## The Problem
 
 When an AI agent finishes implementing a feature or modifying multiple modules, it typically dumps a long, one-shot summary. As the decision-maker, you are left with a passive wall of text: it is hard to grasp the true progress of the session, verify whether shared components or callers were broken, interrogate specific design choices, or systematically track follow-up fixes.
 
-## How it works
+## Quick Trigger
 
-`work-report` puts the agent in the role of a **subordinate engineer reporting completed work to a leader**, one logical item at a time:
+After an agent finishes writing or modifying code, trigger the workflow in chat:
+
+- **Slash command**: `/work-report`
+- **Natural language**: `"work report"`, `"walk me through the changes"`, `"brief me on the changes"`, `"step-by-step report"`, `"工作汇报"`, `"向我汇报"`, `"逐项汇报"`, `"汇报一下这次改动"`, `"复盘一下代码"`
+
+## How It Works
+
+`work-report` puts the agent in the role of a **subordinate engineer reporting completed work to a technical lead**, one logical item at a time:
 
 ```mermaid
 flowchart LR
-    A[1. Build N-item Briefing Agenda] --> B[2. Report Item k with 5 elements]
-    B --> C{3. Leader's Decision}
-    C -- Clear / Pass --> D{k = N?}
-    D -- No --> B
-    D -- Yes --> E[6. Final Summary & Rectification List]
-    C -- 4a. Interrogate details --> F[Search code / call chain & answer with proof]
-    C -- 4b. Issue directive --> G[Log into Rectification List without derailing briefing]
-    F --> H{5. Secondary confirmation}
+    A["1. Build N-item Briefing Agenda"] --> B["2. Report Item k with 5 elements"]
+    B --> C{"3. Leader's Decision"}
+    C -- "Clear / Pass" --> D{"k = N?"}
+    D -- "No" --> B
+    D -- "Yes" --> E["6. Final Summary & Rectification List"]
+    C -- "4a. Interrogate details" --> F["Search code / call chain & answer with proof"]
+    C -- "4b. Issue directive" --> G["Log into Rectification List without derailing briefing"]
+    F --> H{"5. Secondary confirmation"}
     G --> H
-    H -- Confirmed --> D
-    H -- Follow-up --> C
+    H -- "Confirmed" --> D
+    H -- "Follow-up" --> C
 ```
 
 ### Each briefing item includes 5 elements
@@ -52,22 +52,32 @@ After all $N$ items are reviewed, the agent outputs a complete summary directly 
 - **Unverified Items & Residual Risks** — remaining unverified checks or edge cases.
 - **Next-Step Prompt** — asks whether to immediately execute the Rectification List or conclude the briefing.
 
-## Install
+## Installation
+
+### Option 1: Install via `npx skills`
+
+```bash
+npx skills add lastxuanain/ainward-skills
+```
+
+### Option 2: Git Clone + Symlink
 
 ```bash
 git clone https://github.com/lastxuanain/ainward-skills.git ~/ainward-skills
 
-# Antigravity (verified)
+# Antigravity
+mkdir -p ~/.gemini/config/skills
 ln -s ~/ainward-skills/skills/work-report ~/.gemini/config/skills/work-report
+
+# Claude Code
+mkdir -p ~/.claude/skills
+ln -s ~/ainward-skills/skills/work-report ~/.claude/skills/work-report
+
+# Codex
+mkdir -p ~/.codex/skills
+ln -s ~/ainward-skills/skills/work-report ~/.codex/skills/work-report
+
+# Cursor
+mkdir -p ~/.cursor/skills
+ln -s ~/ainward-skills/skills/work-report ~/.cursor/skills/work-report
 ```
-
-For other agents supporting the [Agent Skills](https://agentskills.io) format, link or copy the folder into that agent's skills directory.
-
-## Usage
-
-- Slash command: `/work-report`
-- Natural language: `"work report"`, `"walk me through the changes"`, `"brief me on the changes"`, `"step-by-step report"`, `"工作汇报"`, `"向我汇报"`, `"逐项汇报"`, `"汇报一下这次改动"`, `"复盘一下代码"`
-
-## Changelog
-
-- **1.0.0**: Initial release.

@@ -2,76 +2,97 @@
 
 English | [简体中文](README.zh-CN.md)
 
-Practice-verified AI Agent Skills, maintained under the **Ainward** personal tech brand.
+Open-source engineering workflow skills that make AI coding agents **more controllable, rigorous, and accountable**.
 
-Every skill in this repository is distilled from real engineering workflows and built on the open [Agent Skills](https://agentskills.io) specification for cross-agent reuse.
+When working with AI coding agents (Claude Code, Antigravity, Cursor, Codex, etc.), it is common to run into frustrating workflows: **one-shot walls of text after large code changes, vague summaries that hide unverified edge cases, missing call-chain impact checks, or agents rushing ahead without confirmation**.
 
-## Core Principles
+Built on the open [Agent Skills](https://agentskills.io) standard, this repository provides practical, ready-to-use workflows that keep you in control of code quality, review depth, and key engineering decisions.
 
-| Principle | Meaning |
-|-----------|---------|
-| **Practice first** | Only skills proven in real engineering tasks are published—nothing written speculatively. |
-| **Evidence first** | Skills require agents to back every claim, impact analysis, and verification status with concrete code references and real command output. |
-| **Human decision** | Humans stay in control of progression, architectural trade-offs, and irreversible actions (`commit`, `push`, deploy, delete). |
-| **Quality first** | High-cohesion workflows over quantity, with explicit maturity status and semantic versioning. |
-| **Cross-agent reuse** | Standard `SKILL.md` format with host-agnostic capability descriptions and graceful fallbacks. |
+---
 
-## Skills
+## Available Skills
 
-| Skill | Categories | Status | Verified on | Summary |
-|-------|-----------|--------|-------------|---------|
-| [work-report](skills/work-report/README.md) | `agent-workflow`, `engineering-governance`, `software-engineering` | `experimental` | Antigravity | Item-by-item work report and code retrospective: answers leader interrogations with proof, logs directives, and outputs a consolidated Rectification List. |
+| Skill | What Problem It Solves | How to Trigger | Docs |
+|-------|------------------------|----------------|------|
+| **[work-report](skills/work-report/README.md)**<br>(工作汇报) | Replaces passive, one-shot summaries after code changes. The agent briefs you **one logical item at a time** like an engineer reporting to a tech lead, answers interrogations with code evidence, logs your directives, and outputs a consolidated Rectification List (`整改清单`). | `/work-report`<br>or natural language: `"walk me through the changes"`, `"brief me on the changes"`, `"work report"`, `"向我汇报"` | [Read Docs →](skills/work-report/README.md) |
 
-### Categories
+### 💡 Spotlight: `work-report`
 
-| ID | Category |
-|----|----------|
-| `software-engineering` | Software engineering and code review |
-| `agent-workflow` | AI agent workflows |
-| `engineering-governance` | Engineering governance and quality control |
-| `research-knowledge` | Technical research and knowledge management |
-| `content-creation` | Content creation and production |
+After an agent finishes implementing a feature or modifying multiple files, run `/work-report` or say **"walk me through the changes"**:
 
-### Maturity
+- **Paced Item-by-Item Briefing**: Instead of dumping a massive summary, the agent organizes changes into $N$ logical items and presents **one item at a time**, waiting for your go-ahead at every step.
+- **5 Mandatory Evidence Elements**: Every item covers *Scope & Line Links*, *Before/After Logic*, *Upstream/Downstream Call-Chain Impact*, *Honest Verification Status*, and *Progress Tracking*.
+- **Interactive Q&A & Actionable Rectification List**: Interrogate specific choices (*"Why change this?"*, *"Will this break caller X?"*) for on-the-spot code proof, or issue directives that get logged into a numbered **Rectification List (`整改清单`)**—ready to execute once the briefing concludes.
 
-| Status | Meaning |
-|--------|---------|
-| `experimental` | Used in real work and actively being refined. |
-| `stable` | Validated across multiple real-world tasks with a settled behavior contract. |
-| `deprecated` | Superseded or no longer recommended. |
+👉 **[Read the full `work-report` guide](skills/work-report/README.md)**
 
-## Install
+---
 
-Each skill is a self-contained folder with a `SKILL.md`. Clone the repo once, then symlink the skills you need so `git pull` keeps them up to date:
+## Quick Start & Installation
+
+Each skill is a self-contained directory with a `SKILL.md` file, compatible with any AI coding tool that supports the [Agent Skills](https://agentskills.io) specification.
+
+### Option 1: Install via `npx skills`
 
 ```bash
-git clone https://github.com/lastxuanain/ainward-skills.git ~/ainward-skills
-
-# Antigravity (verified)
-ln -s ~/ainward-skills/skills/<skill-name> ~/.gemini/config/skills/<skill-name>
+npx skills add lastxuanain/ainward-skills
 ```
 
-## Compatibility
+### Option 2: Git Clone + Symlink (Recommended for easy updates via `git pull`)
 
-| Agent | Status |
-|-------|--------|
-| Antigravity | ✅ Verified |
-| Claude Code, Codex, Gemini CLI, Cursor, and other agents supporting Agent Skills | ⚪ Compatible by spec, not yet verified end-to-end |
+```bash
+# 1. Clone the repository
+git clone https://github.com/lastxuanain/ainward-skills.git ~/ainward-skills
+```
 
-## Repository Layout
+Then symlink the skill you want (e.g., `work-report`) into your agent's skills directory:
+
+```bash
+# Antigravity
+mkdir -p ~/.gemini/config/skills
+ln -s ~/ainward-skills/skills/work-report ~/.gemini/config/skills/work-report
+
+# Claude Code
+mkdir -p ~/.claude/skills
+ln -s ~/ainward-skills/skills/work-report ~/.claude/skills/work-report
+
+# Codex
+mkdir -p ~/.codex/skills
+ln -s ~/ainward-skills/skills/work-report ~/.codex/skills/work-report
+
+# Cursor
+mkdir -p ~/.cursor/skills
+ln -s ~/ainward-skills/skills/work-report ~/.cursor/skills/work-report
+```
+
+> **Tip**: Once installed, trigger the skill directly in chat using its slash command (e.g., `/work-report`) or natural language prompt (e.g., `"walk me through the changes"`).
+
+---
+
+## Why Use These Skills?
+
+- **Evidence Over Guesswork**: Agents are required to back every claim, call-chain impact analysis, and verification status with concrete file/line references and real command output—explicitly marking unrun checks as `Not verified` rather than fabricating success.
+- **Human-in-the-Loop Control**: Built-in confirmation gates keep you in charge of pacing, architectural trade-offs, and any irreversible actions (`commit`, `push`, or follow-up edits).
+- **Battle-Tested in Real Workflows**: Every skill is distilled from recurring pain points in daily software engineering—focused on high-utility workflows rather than quantity.
+- **Cross-Agent Portability**: Written in the standard `SKILL.md` format with graceful fallbacks so your workflows stay consistent across different AI coding agents.
+
+---
+
+## Contributing & Feedback
+
+Feedback, bug reports, and pull requests are welcome! Feel free to open an [Issue](https://github.com/lastxuanain/ainward-skills/issues) to suggest improvements or propose new engineering skills.
+
+Repository structure:
 
 ```text
 ainward-skills/
-├── skills/
-│   └── <skill-name>/
-│       ├── SKILL.md         # Agent-facing instructions (English)
-│       ├── README.md        # Human-facing documentation (English)
-│       └── README.zh-CN.md  # Human-facing documentation (Chinese)
-├── README.md
-├── README.zh-CN.md
-└── LICENSE
+└── skills/
+    └── <skill-name>/
+        ├── SKILL.md         # Agent-facing instructions
+        ├── README.md        # English documentation
+        └── README.zh-CN.md  # Chinese documentation
 ```
 
 ## License
 
-[MIT](LICENSE) © 2026 Ainward
+[MIT](LICENSE)
