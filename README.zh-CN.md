@@ -15,6 +15,7 @@
 | Skill | 解决什么问题 | 触发方式 | 详细文档 |
 |-------|--------------|----------|----------|
 | **[work-report](skills/work-report/README.zh-CN.md)**<br>（工作汇报） | 告别改完代码后的敷衍流水账总结。让 Agent 像下属向技术负责人汇报一样**逐项呈报改动、接受细节盘问、记录修改批示**，最后输出《整改清单》。 | `/work-report`<br>或自然语言：`向我汇报`、`逐项汇报`、`汇报一下这次改动`、`复盘一下代码` | [查看文档 →](skills/work-report/README.zh-CN.md) |
+| **[agent-review](skills/agent-review/README.zh-CN.md)**<br>（独立审查） | 跳出局部 `git diff` 与“自己审自己”偏见。派发**独立只读子 Agent** 沿上游、下游与横向复用链展开全链路审查，排查跨层映射、“修 A 坏 B”回归与关联漏改文件，输出 `P0/P1/P2` 八板块报告。 | `/agent-review`<br>或自然语言：`审查一下`、`帮我看看这次改动`、`改动会影响什么`、`谁调用了 X` | [查看文档 →](skills/agent-review/README.zh-CN.md) |
 
 ### 💡 `work-report`（工作汇报）核心亮点
 
@@ -25,6 +26,16 @@
 - **盘问与批示不脱轨**：你可以随时质问“为什么这么改？”“会不会影响其他调用方？”，Agent 会现场查证代码作答；你下达的修改意见会被记入《整改清单》，待全部汇报结束后统一汇总并请示是否立即执行。
 
 👉 **[阅读 `work-report` 完整工作流与使用说明](skills/work-report/README.zh-CN.md)**
+
+### 🔍 `agent-review`（全链路独立代码审查与影响面分析）核心亮点
+
+准备提交代码、发起 PR，或想搞清楚改某个核心模块会波及哪些业务时，输入 `/agent-review`：
+
+- **独立子 Agent + 三维全链路展开**：剥离实现者自评滤镜，不只看 `git diff`，主动沿**上游调用方、下游依赖、横向公共复用组件**立体检索，严查“修 A 坏 B”回归风险。
+- **跨语言自适应 6 大审查内核**：自动识别项目技术栈与真实分层（不生搬硬套不存在的概念），核查**全链路闭环、单一事实源（SSOT）跨层映射一致性、权限与状态流转、反静默吞错兜底、反临时补丁/重复造轮子/废弃死代码**。
+- **`P0/P1/P2` 八板块工程报告**：固定输出审查结论、问题分级、回归风险与受影响业务、影响面、实际改动文件、**关联未改文件（含疑似漏改预警）**、验证路径与遗留项，只报证据、交卷即停、绝不擅改代码。
+
+👉 **[阅读 `agent-review` 完整工作流与使用说明](skills/agent-review/README.zh-CN.md)**
 
 ---
 
@@ -45,27 +56,31 @@ npx skills add lastxuanain/ainward-skills
 git clone https://github.com/lastxuanain/ainward-skills.git ~/ainward-skills
 ```
 
-然后将需要的 Skill（例如 `work-report`）软链接到你所使用的 Agent 技能目录：
+然后将需要的 Skill（如 `work-report`、`agent-review`）软链接到你所使用的 Agent 技能目录：
 
 ```bash
 # Antigravity
 mkdir -p ~/.gemini/config/skills
 ln -s ~/ainward-skills/skills/work-report ~/.gemini/config/skills/work-report
+ln -s ~/ainward-skills/skills/agent-review ~/.gemini/config/skills/agent-review
 
 # Claude Code
 mkdir -p ~/.claude/skills
 ln -s ~/ainward-skills/skills/work-report ~/.claude/skills/work-report
+ln -s ~/ainward-skills/skills/agent-review ~/.claude/skills/agent-review
 
 # Codex
 mkdir -p ~/.codex/skills
 ln -s ~/ainward-skills/skills/work-report ~/.codex/skills/work-report
+ln -s ~/ainward-skills/skills/agent-review ~/.codex/skills/agent-review
 
 # Cursor
 mkdir -p ~/.cursor/skills
 ln -s ~/ainward-skills/skills/work-report ~/.cursor/skills/work-report
+ln -s ~/ainward-skills/skills/agent-review ~/.cursor/skills/agent-review
 ```
 
-> **提示**：安装完成后，在对话中直接输入对应的斜杠命令（如 `/work-report`）或自然语言口令（如「向我汇报这次改动」）即可触发。
+> **提示**：安装完成后，在对话中直接输入对应的斜杠命令（如 `/work-report`、`/agent-review`）或自然语言口令（如「向我汇报这次改动」「审查一下这次改动」）即可触发。
 
 ---
 

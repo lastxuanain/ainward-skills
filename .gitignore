@@ -3,3 +3,12 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Environment & Local Secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
