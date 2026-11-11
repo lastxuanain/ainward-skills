@@ -2,55 +2,63 @@
 
 English | [简体中文](README.zh-CN.md)
 
-> Structured item-by-item work report and code review retrospective: the agent reports completed changes like an engineer briefing a technical lead, answers interrogations with code evidence, logs directives, and produces a consolidated Rectification List (`整改清单`).
+> Paced, item-by-item work report and interactive code walkthrough: the agent briefs you like an accountable engineer reporting to a technical lead—opening with an executive snapshot and tiered agenda, presenting clickable code evidence and hidden trade-offs, answering interrogations with call-chain proof, logging directives without derailing flow, and closing with a consolidated Rectification List (`整改清单`) and sign-off execution.
 
 ## The Problem
 
-When an AI agent finishes implementing a feature or modifying multiple modules, it typically dumps a long, one-shot summary. As the decision-maker, you are left with a passive wall of text: it is hard to grasp the true progress of the session, verify whether shared components or callers were broken, interrogate specific design choices, or systematically track follow-up fixes.
+When an AI agent finishes implementing a feature or modifying multiple modules, it typically dumps a long, optimistic wall of text. As the technical decision-maker, you run into three recurring pain points:
+
+- **Cognitive overload & lost context**: Prose summaries gloss over critical details, while raw `git diff` hunks bury architectural flow under scattered line edits;
+- **Hidden assumptions & silent shortcuts**: Unstated design trade-offs, implicit assumptions, or band-aid workarounds get rationalized away instead of surfaced;
+- **Derailed review flow**: Pointing out an issue in module 2 causes the agent to immediately start rewriting code, leaving modules 3–6 completely unreviewed.
+
+`work-report` turns post-change review into a **leader-paced interactive walkthrough** (and pairs naturally with [`agent-review`](../agent-review/README.md): `agent-review` runs an isolated subagent audit to hunt bugs, while `work-report` aligns human understanding and captures your exact architectural directives).
 
 ## Quick Trigger
 
 After an agent finishes writing or modifying code, trigger the workflow in chat:
 
-- **Slash command**: `/work-report`
-- **Natural language**: `"work report"`, `"walk me through the changes"`, `"brief me on the changes"`, `"step-by-step report"`, `"工作汇报"`, `"向我汇报"`, `"逐项汇报"`, `"汇报一下这次改动"`, `"复盘一下代码"`
+- **Brief current session or workspace changes**: `/work-report`, `"work report"`, `"walk me through the changes"`, `"brief me on the changes"`, `"step-by-step report"`, `"向我汇报"`, `"逐项汇报"`
+- **Brief a specific scope**: `/work-report src/auth/`, `/work-report HEAD~2..HEAD`
 
 ## How It Works
 
-`work-report` puts the agent in the role of a **subordinate engineer reporting completed work to a technical lead**, one logical item at a time:
+`work-report` anchors the target scope, groups changes along architectural boundaries into `N` items tagged `Core` or `Supporting` (scaling depth proportionally with zero boilerplate), and presents **one item per turn** by default—with built-in **fast-forward batching** and **free-jump navigation** whenever you want to speed through supporting items:
 
 ```mermaid
 flowchart LR
-    A["1. Build N-item Briefing Agenda"] --> B["2. Report Item k with 5 elements"]
-    B --> C{"3. Leader's Decision"}
-    C -- "Clear / Pass" --> D{"k = N?"}
+    A["1. Executive Snapshot + Tiered Agenda"] --> B["2. Report Item k (5 elements + trade-offs)"]
+    B --> C{"3. Leader Gate"}
+    C -- "Clear / Next item" --> D{"All N reviewed?"}
+    C -- "Fast-forward: batch remaining" --> D
     D -- "No" --> B
     D -- "Yes" --> E["6. Final Summary & Rectification List"]
-    C -- "4a. Interrogate details" --> F["Search code / call chain & answer with proof"]
-    C -- "4b. Issue directive" --> G["Log into Rectification List without derailing briefing"]
-    F --> H{"5. Secondary confirmation"}
+    C -- "4a. Interrogate details" --> F["Trace code / call chain & answer with proof"]
+    C -- "4b. Issue directive" --> G["Log into Rectification List without derailing flow"]
+    F --> H{"5. Single-step merged gate"}
     G --> H
-    H -- "Confirmed" --> D
-    H -- "Follow-up" --> C
+    H -- "Confirmed -> advance" --> D
+    H -- "Follow-up / adjust" --> C
+    E --> I["7. Execute Rectifications & Sign-Off Table"]
 ```
 
-### Each briefing item includes 5 elements
+### Each briefing item covers 5 elements (scaled by `Core` vs. `Supporting` tier)
 
-1. **Scope & Location** — files added, modified, or deleted, and the symbols involved, with clickable line-range links.
-2. **Core Change** — concise before vs. after comparison explaining *what* changed and *why*.
-3. **Call-Chain & Impact** — upstream callers, downstream dependencies, shared utilities touched, and how they were checked.
-4. **Verification Status** — candid report of checks already run vs. items marked `Not verified: <reason>` (no unprompted slow test runs stalling the briefing).
+1. **Scope & Location** — added, modified, or deleted files and exact symbols with clickable line-range links.
+2. **Core Change & Key Trade-offs** — concise before vs. after comparison explaining *what* changed and *why*, **proactively surfacing architectural trade-offs, implicit assumptions, or shortcut compromises** rather than self-justifying them.
+3. **Call-Chain & Impact** — upstream callers, downstream dependencies, and shared utilities touched, stating *how* they were checked (never a bare `"no impact"`).
+4. **Verification Status** — candid report of checks already executed vs. items marked `Not verified: <reason>` (read-only and low-latency by default).
 5. **Progress & Logged Directives** — `Item k of N` plus the running count of recorded rectification items.
 
-### Final deliverable (`《工作汇报总结与整改清单》`)
+### Final Deliverable & Closed-Loop Sign-Off (`《工作汇报总结与整改清单》`)
 
-After all $N$ items are reviewed, the agent outputs a complete summary directly in the conversation:
+Once all items are reviewed, the agent outputs a complete summary directly in chat:
 
-- **Briefing Overview Table** — status of all $N$ items (`Approved`, `Approved after Q&A`, or `Rectification Required`).
-- **Interrogation & Verification Minutes** — key questions asked by the leader and the verified findings.
-- **Leader Directives & Rectification List (`整改清单`)** — numbered action items with target locations, the leader's directive, and concrete modification plans.
-- **Unverified Items & Residual Risks** — remaining unverified checks or edge cases.
-- **Next-Step Prompt** — asks whether to immediately execute the Rectification List or conclude the briefing.
+- **Briefing Overview Table** — tier and final review status of all `N` items (`Approved`, `Approved (Batched)`, `Approved after Q&A`, `Rectification Required`, or `Fixed Inline`).
+- **Interrogation & Verification Minutes** — key questions raised during the walkthrough and verified code conclusions.
+- **Leader Directives & Rectification List (`整改清单`)** — numbered action items with target locations, your directive, and concrete modification plans.
+- **Unverified Items & Residual Risks** — unrun checks, surfaced assumptions, or remaining edge cases.
+- **Tracked Execution & Sign-Off** — prompts whether to execute the Rectification List right away; when approved, applies `#1..#M` in order, runs targeted checks, and replies with a **Rectification Sign-Off Table (`整改核销回执表`)**.
 
 ## Installation
 

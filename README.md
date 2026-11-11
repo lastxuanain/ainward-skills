@@ -21,9 +21,9 @@ Built on the open [Agent Skills](https://agentskills.io) standard, this reposito
 
 After an agent finishes implementing a feature or modifying multiple files, run `/work-report` or say **"walk me through the changes"**:
 
-- **Paced Item-by-Item Briefing**: Instead of dumping a massive summary, the agent organizes changes into $N$ logical items and presents **one item at a time**, waiting for your go-ahead at every step.
-- **5 Mandatory Evidence Elements**: Every item covers *Scope & Line Links*, *Before/After Logic*, *Upstream/Downstream Call-Chain Impact*, *Honest Verification Status*, and *Progress Tracking*.
-- **Interactive Q&A & Actionable Rectification List**: Interrogate specific choices (*"Why change this?"*, *"Will this break caller X?"*) for on-the-spot code proof, or issue directives that get logged into a numbered **Rectification List (`整改清单`)**—ready to execute once the briefing concludes.
+- **Executive Snapshot & Paced Walkthrough**: Opens with a high-level snapshot and a `Core / Supporting` tiered agenda, presenting **one item at a time** by default—with one-click **fast-forward batching** whenever you want to breeze through supporting items.
+- **5 Evidence Elements + Surfaced Trade-offs**: Every item covers *Scope & Line Links*, *Core Change & Key Trade-offs / Assumptions*, *Upstream/Downstream Call-Chain Impact*, *Honest Verification Status*, and *Progress Tracking*—flagging shortcuts candidly instead of self-rationalizing them.
+- **Underailed Q&A & Closed-Loop Sign-Off**: Interrogate choices for on-the-spot code proof or log directives into a numbered **Rectification List (`整改清单`)** without derailing the review; once complete, execute all approved fixes in order and verify via a **Rectification Sign-Off Table**.
 
 👉 **[Read the full `work-report` guide](skills/work-report/README.md)**
 
