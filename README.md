@@ -16,6 +16,7 @@ Built on the open [Agent Skills](https://agentskills.io) standard, this reposito
 |-------|------------------------|----------------|------|
 | **[work-report](skills/work-report/README.md)**<br>(工作汇报) | Replaces passive, one-shot summaries after code changes. The agent briefs you **one logical item at a time** like an engineer reporting to a tech lead, answers interrogations with code evidence, logs your directives, and outputs a consolidated Rectification List (`整改清单`). | `/work-report`<br>or natural language: `"walk me through the changes"`, `"brief me on the changes"`, `"work report"`, `"向我汇报"` | [Read Docs →](skills/work-report/README.md) |
 | **[agent-review](skills/agent-review/README.md)**<br>(独立审查) | Goes beyond `git diff` tunnel vision and self-review bias. Delegates **read-only 3D call-graph & full-chain review** to an isolated subagent—catching cross-boundary drift, `"fix A, break B"` regressions, silent fallbacks, and omitted companion files in a `P0/P1/P2` 8-section report. | `/agent-review`<br>or natural language: `"review my changes"`, `"what does this affect"`, `"who calls X"`, `"审查一下"` | [Read Docs →](skills/agent-review/README.md) |
+| **[modern-web-guidance](skills/modern-web-guidance/README.md)**<br>*(Upstream Mirror · Apache-2.0)* | Unmodified mirror of [GoogleChrome/modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance). Steers agents toward modern HTML, CSS, and client-side JS patterns via `npx -y modern-web-guidance@latest`. | Auto-triggered on HTML/CSS/client-side JS tasks | [Read Docs →](skills/modern-web-guidance/README.md) |
 
 ### 💡 Spotlight: `work-report`
 
@@ -37,6 +38,16 @@ Before committing, opening a PR, or modifying a shared module, run `/agent-revie
 
 👉 **[Read the full `agent-review` guide](skills/agent-review/README.md)**
 
+### 🌐 Mirrored Upstream Skill: `modern-web-guidance` (Third-Party)
+
+Bundled directly so installing `ainward-skills` equips your agent for modern frontend development in one shot:
+
+- **Unmodified Upstream Mirror**: Synced verbatim from [`GoogleChrome/modern-web-guidance`](https://github.com/GoogleChrome/modern-web-guidance) (`SKILL.md` + upstream `LICENSE`; the 250+ `guides/` markdown files are intentionally omitted because `SKILL.md` dynamically retrieves the latest guides via `npx -y modern-web-guidance@latest` at runtime).
+- **Automated PR Sync**: Checked daily via [`.github/workflows/sync-modern-web-guidance.yml`](.github/workflows/sync-modern-web-guidance.yml), opening a reviewable Pull Request whenever upstream changes.
+- **License & Telemetry**: Independent from this repository's MIT license (governed by **Apache-2.0** / **CC-BY 4.0**; unaffiliated with Google). To opt out of the CLI's anonymous usage telemetry, set `export DISABLE_TELEMETRY=1`.
+
+👉 **[Read the `modern-web-guidance` attribution & telemetry guide](skills/modern-web-guidance/README.md)**
+
 ---
 
 ## Quick Start & Installation
@@ -46,7 +57,11 @@ Each skill is a self-contained directory with a `SKILL.md` file, compatible with
 ### Option 1: Install via `npx skills`
 
 ```bash
+# Install all bundled skills (work-report, agent-review, modern-web-guidance) in one command
 npx skills add lastxuanain/ainward-skills
+
+# Pull updates later
+npx skills update
 ```
 
 ### Option 2: Git Clone + Symlink (Recommended for easy updates via `git pull`)
@@ -56,31 +71,37 @@ npx skills add lastxuanain/ainward-skills
 git clone https://github.com/lastxuanain/ainward-skills.git ~/ainward-skills
 ```
 
-Then symlink the skills you want (e.g., `work-report`, `agent-review`) into your agent's skills directory:
+Then symlink the skills you want (`work-report`, `agent-review`, `modern-web-guidance`) into your agent's skills directory:
 
 ```bash
 # Antigravity
 mkdir -p ~/.gemini/config/skills
 ln -s ~/ainward-skills/skills/work-report ~/.gemini/config/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.gemini/config/skills/agent-review
+ln -s ~/ainward-skills/skills/modern-web-guidance ~/.gemini/config/skills/modern-web-guidance
 
 # Claude Code
 mkdir -p ~/.claude/skills
 ln -s ~/ainward-skills/skills/work-report ~/.claude/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.claude/skills/agent-review
+ln -s ~/ainward-skills/skills/modern-web-guidance ~/.claude/skills/modern-web-guidance
 
 # Codex
 mkdir -p ~/.codex/skills
 ln -s ~/ainward-skills/skills/work-report ~/.codex/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.codex/skills/agent-review
+ln -s ~/ainward-skills/skills/modern-web-guidance ~/.codex/skills/modern-web-guidance
 
 # Cursor
 mkdir -p ~/.cursor/skills
 ln -s ~/ainward-skills/skills/work-report ~/.cursor/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.cursor/skills/agent-review
+ln -s ~/ainward-skills/skills/modern-web-guidance ~/.cursor/skills/modern-web-guidance
 ```
 
-> **Tip**: Once installed, trigger the skill directly in chat using its slash command (e.g., `/work-report`, `/agent-review`) or natural language prompt (e.g., `"walk me through the changes"`, `"review my changes"`).
+> **Tip**: Once installed, trigger first-party skills directly in chat using slash commands (`/work-report`, `/agent-review`) or natural language prompts (`"walk me through the changes"`, `"review my changes"`). `modern-web-guidance` triggers automatically on HTML/CSS/client-side JS tasks.
+>
+> **Tip (Antigravity Plugin users)**: If you already installed Google's official *Modern Web Guidance* plugin from the Antigravity Marketplace, skip symlinking `skills/modern-web-guidance` into `~/.gemini/config/skills/` to avoid loading the same skill twice.
 
 ---
 
@@ -101,13 +122,21 @@ Repository structure:
 
 ```text
 ainward-skills/
+├── .github/workflows/
+│   └── sync-modern-web-guidance.yml  # Daily upstream PR sync
 └── skills/
-    └── <skill-name>/
-        ├── SKILL.md         # Agent-facing instructions
-        ├── README.md        # English documentation
-        └── README.zh-CN.md  # Chinese documentation
+    ├── <first-party-skill>/
+    │   ├── SKILL.md                  # Agent-facing instructions
+    │   ├── README.md                 # English documentation
+    │   └── README.zh-CN.md           # Chinese documentation
+    └── modern-web-guidance/          # Unmodified upstream mirror
+        ├── LICENSE                   # Upstream Apache-2.0 license
+        ├── SKILL.md                  # Synced from GoogleChrome/modern-web-guidance
+        ├── README.md                 # Attribution & telemetry notice (EN)
+        └── README.zh-CN.md           # Attribution & telemetry notice (ZH)
 ```
 
 ## License
 
-[MIT](LICENSE)
+- **[MIT](LICENSE)** — applies to original `ainward-skills` workflows (`work-report`, `agent-review`) and repository files.
+- **Third-Party Upstream Mirror (`skills/modern-web-guidance/`)** — mirrored unmodified from [GoogleChrome/modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance) (unaffiliated with `ainward-skills`) and governed by its upstream **[Apache-2.0 License](skills/modern-web-guidance/LICENSE)** (code) and **[CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/)** (upstream `guides/` documentation, with portions derived from MDN Web Docs, W3C, WHATWG, and IETF). See [skills/modern-web-guidance/README.md](skills/modern-web-guidance/README.md) for full attribution and `DISABLE_TELEMETRY=1` opt-out instructions.
