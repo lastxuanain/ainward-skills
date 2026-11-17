@@ -16,6 +16,7 @@ Built on the open [Agent Skills](https://agentskills.io) standard, this reposito
 |-------|------------------------|----------------|------|
 | **[work-report](skills/work-report/README.md)**<br>(工作汇报) | Replaces passive, one-shot summaries after code changes. The agent briefs you **one logical item at a time** like an engineer reporting to a tech lead, answers interrogations with code evidence, logs your directives, and outputs a consolidated Rectification List (`整改清单`). | `/work-report`<br>or natural language: `"walk me through the changes"`, `"brief me on the changes"`, `"work report"`, `"向我汇报"` | [Read Docs →](skills/work-report/README.md) |
 | **[agent-review](skills/agent-review/README.md)**<br>(独立审查) | Goes beyond `git diff` tunnel vision and self-review bias. Delegates **read-only 3D call-graph & full-chain review** to an isolated subagent—catching cross-boundary drift, `"fix A, break B"` regressions, silent fallbacks, and omitted companion files in a `P0/P1/P2` 8-section report. | `/agent-review`<br>or natural language: `"review my changes"`, `"what does this affect"`, `"who calls X"`, `"审查一下"` | [Read Docs →](skills/agent-review/README.md) |
+| **[code-sync](skills/code-sync/README.md)**<br>(代码同步) | Replaces blind `cherry-pick` and mechanical copy-pasting across diverged branches. Interactively anchors **source branch, target branch, and sync scope**, runs a zero-checkout 4-state semantic audit (*Already Synced / Superseded / Missing / Conflict*), gates on a Minimal Sync Plan, and re-adapts to the target's current SSOT. | `/code-sync`<br>or natural language: `"code sync"`, `"sync to branch"`, `"semantic merge"`, `"代码同步"`, `"代码合并"` | [Read Docs →](skills/code-sync/README.md) |
 | **[modern-web-guidance](skills/modern-web-guidance/README.md)**<br>*(Upstream Mirror · Apache-2.0)* | Unmodified mirror of [GoogleChrome/modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance). Steers agents toward modern HTML, CSS, and client-side JS patterns via `npx -y modern-web-guidance@latest`. | Auto-triggered on HTML/CSS/client-side JS tasks | [Read Docs →](skills/modern-web-guidance/README.md) |
 
 ### 💡 Spotlight: `work-report`
@@ -38,6 +39,16 @@ Before committing, opening a PR, or modifying a shared module, run `/agent-revie
 
 👉 **[Read the full `agent-review` guide](skills/agent-review/README.md)**
 
+### 🔀 Spotlight: `code-sync`
+
+When porting a fix or feature from your current session, dirty workspace, or feature/hotfix branch into a refactored target branch (like `main`), run `/code-sync`:
+
+- **Smart Sensing + On-Demand 3-Input Card**: Probes your current branch, dirty files, mounted `git worktree` paths, and cached `origin/*` refs automatically—prompting only for missing inputs across **Session Changes, Workspace Uncommitted Changes, Source Branch Commits, or Specific Commits/Paths**.
+- **Zero-Checkout 4-State Semantic Audit**: Inspects the target branch strictly read-only without switching branches, classifying each logical unit as **Already Synced, Superseded by Refactor, Missing/Regressed, or Semantic Conflict**, and drafting a target-native **Minimal Sync Plan (`最小改动清单`)** aligned with current SSOT and 3D call chains.
+- **Single-Step Merged Gate + Safe Worktree/Stash Landing**: Consolidates plan approval, conflict choices, and cross-branch landing mode (recommending an isolated temporary `git worktree` when your source tree has uncommitted edits) into a single confirmation turn, closing with targeted verification and a **Sync Sign-Off Table (`同步核销回执表`)**.
+
+👉 **[Read the full `code-sync` guide](skills/code-sync/README.md)**
+
 ### 🌐 Mirrored Upstream Skill: `modern-web-guidance` (Third-Party)
 
 Bundled directly so installing `ainward-skills` equips your agent for modern frontend development in one shot:
@@ -57,7 +68,7 @@ Each skill is a self-contained directory with a `SKILL.md` file, compatible with
 ### Option 1: Install via `npx skills`
 
 ```bash
-# Install all bundled skills (work-report, agent-review, modern-web-guidance) in one command
+# Install all bundled skills (work-report, agent-review, code-sync, modern-web-guidance) in one command
 npx skills add lastxuanain/ainward-skills
 
 # Pull updates later
@@ -71,35 +82,39 @@ npx skills update
 git clone https://github.com/lastxuanain/ainward-skills.git ~/ainward-skills
 ```
 
-Then symlink the skills you want (`work-report`, `agent-review`, `modern-web-guidance`) into your agent's skills directory:
+Then symlink the skills you want (`work-report`, `agent-review`, `code-sync`, `modern-web-guidance`) into your agent's skills directory:
 
 ```bash
 # Antigravity
 mkdir -p ~/.gemini/config/skills
 ln -s ~/ainward-skills/skills/work-report ~/.gemini/config/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.gemini/config/skills/agent-review
+ln -s ~/ainward-skills/skills/code-sync ~/.gemini/config/skills/code-sync
 ln -s ~/ainward-skills/skills/modern-web-guidance ~/.gemini/config/skills/modern-web-guidance
 
 # Claude Code
 mkdir -p ~/.claude/skills
 ln -s ~/ainward-skills/skills/work-report ~/.claude/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.claude/skills/agent-review
+ln -s ~/ainward-skills/skills/code-sync ~/.claude/skills/code-sync
 ln -s ~/ainward-skills/skills/modern-web-guidance ~/.claude/skills/modern-web-guidance
 
 # Codex
 mkdir -p ~/.codex/skills
 ln -s ~/ainward-skills/skills/work-report ~/.codex/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.codex/skills/agent-review
+ln -s ~/ainward-skills/skills/code-sync ~/.codex/skills/code-sync
 ln -s ~/ainward-skills/skills/modern-web-guidance ~/.codex/skills/modern-web-guidance
 
 # Cursor
 mkdir -p ~/.cursor/skills
 ln -s ~/ainward-skills/skills/work-report ~/.cursor/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.cursor/skills/agent-review
+ln -s ~/ainward-skills/skills/code-sync ~/.cursor/skills/code-sync
 ln -s ~/ainward-skills/skills/modern-web-guidance ~/.cursor/skills/modern-web-guidance
 ```
 
-> **Tip**: Once installed, trigger first-party skills directly in chat using slash commands (`/work-report`, `/agent-review`) or natural language prompts (`"walk me through the changes"`, `"review my changes"`). `modern-web-guidance` triggers automatically on HTML/CSS/client-side JS tasks.
+> **Tip**: Once installed, trigger first-party skills directly in chat using slash commands (`/work-report`, `/agent-review`, `/code-sync`) or natural language prompts (`"walk me through the changes"`, `"review my changes"`, `"sync changes to main"`). `modern-web-guidance` triggers automatically on HTML/CSS/client-side JS tasks.
 >
 > **Tip (Antigravity Plugin users)**: If you already installed Google's official *Modern Web Guidance* plugin from the Antigravity Marketplace, skip symlinking `skills/modern-web-guidance` into `~/.gemini/config/skills/` to avoid loading the same skill twice.
 
@@ -138,5 +153,5 @@ ainward-skills/
 
 ## License
 
-- **[MIT](LICENSE)** — applies to original `ainward-skills` workflows (`work-report`, `agent-review`) and repository files.
+- **[MIT](LICENSE)** — applies to original `ainward-skills` workflows (`work-report`, `agent-review`, `code-sync`) and repository files.
 - **Third-Party Upstream Mirror (`skills/modern-web-guidance/`)** — mirrored unmodified from [GoogleChrome/modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance) (unaffiliated with `ainward-skills`) and governed by its upstream **[Apache-2.0 License](skills/modern-web-guidance/LICENSE)** (code) and **[CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/)** (upstream `guides/` documentation, with portions derived from MDN Web Docs, W3C, WHATWG, and IETF). See [skills/modern-web-guidance/README.md](skills/modern-web-guidance/README.md) for full attribution and `DISABLE_TELEMETRY=1` opt-out instructions.

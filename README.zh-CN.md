@@ -16,6 +16,7 @@
 |-------|--------------|----------|----------|
 | **[work-report](skills/work-report/README.zh-CN.md)**<br>（工作汇报） | 告别改完代码后的敷衍流水账总结。让 Agent 像下属向技术负责人汇报一样**逐项呈报改动、接受细节盘问、记录修改批示**，最后输出《整改清单》。 | `/work-report`<br>或自然语言：`向我汇报`、`逐项汇报`、`汇报一下这次改动`、`复盘一下代码` | [查看文档 →](skills/work-report/README.zh-CN.md) |
 | **[agent-review](skills/agent-review/README.zh-CN.md)**<br>（独立审查） | 跳出局部 `git diff` 与“自己审自己”偏见。派发**独立只读子 Agent** 沿上游、下游与横向复用链展开全链路审查，排查跨层映射、“修 A 坏 B”回归与关联漏改文件，输出 `P0/P1/P2` 八板块报告。 | `/agent-review`<br>或自然语言：`审查一下`、`帮我看看这次改动`、`改动会影响什么`、`谁调用了 X` | [查看文档 →](skills/agent-review/README.zh-CN.md) |
+| **[code-sync](skills/code-sync/README.zh-CN.md)**<br>（代码同步） | 拒绝无脑 `cherry-pick` 与机械复制旧代码。交互式锚定**源分支、目标分支与合并范围**，零切分支提取真实语义并做四类状态盘点（已同步 / 被重构覆盖 / 缺失回归 / 语义冲突），经《最小改动清单》门禁后按目标架构安全重适配。 | `/code-sync`<br>或自然语言：`代码同步`、`代码合并`、`同步到分支`、`合并到分支` | [查看文档 →](skills/code-sync/README.zh-CN.md) |
 | **[modern-web-guidance](skills/modern-web-guidance/README.zh-CN.md)**<br>（上游镜像 · Apache-2.0） | 原样镜像自 [GoogleChrome/modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance)。在前端任务中通过 `npx -y modern-web-guidance@latest` 引导 Agent 采用现代 HTML / CSS / 客户端 JS 最佳实践。 | 涉及 HTML / CSS / 客户端 JS 任务时自动触发 | [查看文档 →](skills/modern-web-guidance/README.zh-CN.md) |
 
 ### 💡 `work-report`（工作汇报）核心亮点
@@ -38,6 +39,16 @@
 
 👉 **[阅读 `agent-review` 完整工作流与使用说明](skills/agent-review/README.zh-CN.md)**
 
+### 🔀 `code-sync`（语义化代码同步与跨分支合并）核心亮点
+
+需要将本轮对话修复、工作区未提交改动或源分支提交同步到已演进重构的目标分支（如 `main`）时，输入 `/code-sync`：
+
+- **智能预检 + 单轮按需锚定三要素**：自动探测当前分支、会话/工作区脏状态、挂载 `worktree` 与 `origin` 缓存引用，仅对未指明项在单张卡片中推荐补全（支持**本次对话改动 / 工作区改动 / 源分支领先提交 / 指定 Commit 或文件**）。
+- **零切分支四象限盘点，拒绝机械复制**：分析期不切分支、不乱碰现场，基于真实修复意图将改动归类为**已同步、已被后续重构覆盖、仍缺失或有回归、存在语义分歧**，按目标分支当前架构与事实源（SSOT）设计《最小改动清单》。
+- **单步合并门禁 + Worktree/Stash 安全隔离落地**：在一次确认中合并完成清单拍板、分歧决策与跨分支写入方式（源分支有未提交改动时默认推荐独立临时 `git worktree` 隔离写），靶向验证后输出《同步核销回执表》。
+
+👉 **[阅读 `code-sync` 完整工作流与使用说明](skills/code-sync/README.zh-CN.md)**
+
 ### 🌐 同步收录的第三方 Skill：`modern-web-guidance`
 
 直接内置于仓库中，安装 `ainward-skills` 即可一站式获得现代 Web 开发规范指引：
@@ -57,7 +68,7 @@
 ### 方式一：使用 `npx skills` 一键安装
 
 ```bash
-# 一条命令安装全部内置 Skills（work-report、agent-review、modern-web-guidance）
+# 一条命令安装全部内置 Skills（work-report、agent-review、code-sync、modern-web-guidance）
 npx skills add lastxuanain/ainward-skills
 
 # 后续同步远端更新
@@ -71,35 +82,39 @@ npx skills update
 git clone https://github.com/lastxuanain/ainward-skills.git ~/ainward-skills
 ```
 
-然后将需要的 Skill（`work-report`、`agent-review`、`modern-web-guidance`）软链接到你所使用的 Agent 技能目录：
+然后将需要的 Skill（`work-report`、`agent-review`、`code-sync`、`modern-web-guidance`）软链接到你所使用的 Agent 技能目录：
 
 ```bash
 # Antigravity
 mkdir -p ~/.gemini/config/skills
 ln -s ~/ainward-skills/skills/work-report ~/.gemini/config/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.gemini/config/skills/agent-review
+ln -s ~/ainward-skills/skills/code-sync ~/.gemini/config/skills/code-sync
 ln -s ~/ainward-skills/skills/modern-web-guidance ~/.gemini/config/skills/modern-web-guidance
 
 # Claude Code
 mkdir -p ~/.claude/skills
 ln -s ~/ainward-skills/skills/work-report ~/.claude/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.claude/skills/agent-review
+ln -s ~/ainward-skills/skills/code-sync ~/.claude/skills/code-sync
 ln -s ~/ainward-skills/skills/modern-web-guidance ~/.claude/skills/modern-web-guidance
 
 # Codex
 mkdir -p ~/.codex/skills
 ln -s ~/ainward-skills/skills/work-report ~/.codex/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.codex/skills/agent-review
+ln -s ~/ainward-skills/skills/code-sync ~/.codex/skills/code-sync
 ln -s ~/ainward-skills/skills/modern-web-guidance ~/.codex/skills/modern-web-guidance
 
 # Cursor
 mkdir -p ~/.cursor/skills
 ln -s ~/ainward-skills/skills/work-report ~/.cursor/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.cursor/skills/agent-review
+ln -s ~/ainward-skills/skills/code-sync ~/.cursor/skills/code-sync
 ln -s ~/ainward-skills/skills/modern-web-guidance ~/.cursor/skills/modern-web-guidance
 ```
 
-> **提示**：安装完成后，原创工作流可在对话中输入斜杠命令（`/work-report`、`/agent-review`）或自然语言口令（「向我汇报这次改动」「审查一下这次改动」）触发；`modern-web-guidance` 则会在处理 HTML / CSS / 客户端 JS 任务时自动触发。
+> **提示**：安装完成后，原创工作流可在对话中输入斜杠命令（`/work-report`、`/agent-review`、`/code-sync`）或自然语言口令（「向我汇报这次改动」「审查一下这次改动」「把改动同步到 main」）触发；`modern-web-guidance` 则会在处理 HTML / CSS / 客户端 JS 任务时自动触发。
 >
 > **提示（Antigravity 插件用户）**：如果你已通过 Antigravity 插件市场安装了官方 *Modern Web Guidance* 插件，可跳过将 `skills/modern-web-guidance` 软链接到 `~/.gemini/config/skills/`，避免同一技能被重复加载。
 
@@ -138,5 +153,5 @@ ainward-skills/
 
 ## 许可证
 
-- **[MIT](LICENSE)**：适用于本仓库原创工作流 Skills（`work-report`、`agent-review`）及相关仓库文件。
+- **[MIT](LICENSE)**：适用于本仓库原创工作流 Skills（`work-report`、`agent-review`、`code-sync`）及相关仓库文件。
 - **第三方上游镜像（`skills/modern-web-guidance/`）**：原样同步自 [GoogleChrome/modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance)（与本仓库无隶属关系），独立适用上游 **[Apache-2.0 许可证](skills/modern-web-guidance/LICENSE)**（代码）与 **[CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/)**（上游 `guides/` 文档内容，部分衍生自 MDN Web Docs、W3C、WHATWG 与 IETF 规范）。完整归属声明及 `DISABLE_TELEMETRY=1` 遥测退出方式请参见 [skills/modern-web-guidance/README.zh-CN.md](skills/modern-web-guidance/README.zh-CN.md)。
