@@ -2,120 +2,178 @@
 name: agent-review
 description: >-
   Independent, read-only full-chain code review and 3D call-graph regression
-  analysis delegated to an isolated subagent. Goes beyond raw diffs by tracing
-  upstream callers, downstream dependencies, and lateral shared-component reuse
-  ("fix A, break B"), auditing end-to-end closed loops, single-source-of-truth &
-  cross-boundary mapping consistency, architecture/authz/state boundaries,
-  silent fallbacks, temporary band-aids/duplicate implementations/dead code, and
-  related unmodified files. Outputs P0/P1/P2 findings without modifying code.
+  analysis. Delegates code-change audits to an isolated subagent to eliminate
+  confirmation bias—tracing upstream callers, downstream dependencies, and
+  lateral shared-component reuse ("fix A, break B") across all 6 engineering
+  dimensions, while delivering plain-language Result-First findings by default
+  (full 8-section details on demand), a conditional 1-click P0/P1 fix loop, and
+  fast direct Mode B caller/impact lookups.
   Triggers: /agent-review, "agent review", "code review", "independent review",
   "review my changes", "what does this affect", "who calls", "审查一下",
   "独立审查", "帮我看看这次改动", "改动会影响什么", "谁调用了".
 license: MIT
 compatibility: >-
   Works best on hosts supporting subagents (e.g. define_subagent/invoke_subagent,
-  Agent/Task tool, or custom subagents) plus read-only shell and file-read tools;
-  falls back to an explicitly disclosed zero-assumption single-session review when
+  Agent/Task tool, or custom subagents), structured question tools, and
+  read-only shell/file tools; falls back cleanly to single-session review when
   subagents are unavailable.
 metadata:
   author: Ainward
-  version: "1.0.0"
+  version: "1.2.0"
   status: experimental
   category: "code-review, architecture-audit, regression-analysis, software-engineering"
   verified-agents: "antigravity"
 ---
 
-# Agent Review (全链路独立代码审查与三维影响面分析)
+# Agent Review (全链路独立代码审查与影响面分析)
 
 Run an **unbiased, evidence-backed, read-only architectural and code audit**
-across any language or project structure. Because an agent that just wrote code
-carries confirmation bias, this skill delegates the audit to a **fresh, isolated
-subagent** governed by a strict charter—expanding beyond `git diff` along
-upstream callers, downstream dependencies, and lateral reuse surfaces without
-ever modifying files.
+across any language or project structure. Internally, the reviewer checks every
+edge along upstream callers, downstream dependencies, and lateral shared
+components (`"修 A 坏 B"`). Externally by default, it speaks **plain developer
+language in a scannable `Result-First` format**—folding noisy compatible-file
+inventories behind `"展开细节"` while offering a 1-click fix loop whenever
+`P0`/`P1` blockers appear.
 
 ## When to use
 
-- **Full-chain change review (`Mode A: Change Review`)** — code has been written
-  or modified in the current session or working tree, and the user wants an
-  independent pre-commit / pre-PR audit checking closed loops, cross-layer
-  consistency, `"fix A, break B"` regressions, and omitted files.
-- **Pre-change blast-radius & caller tracing (`Mode B: Impact Analysis`)** — the
+- **Full-chain change review (`Mode A: Change Review`)** — code was written or
+  modified in the current session, working tree, or target workspace, and you
+  want an unbiased pre-commit / pre-PR audit for closed loops, cross-layer
+  consistency, `"fix A, break B"` regressions, and omitted companion files.
+- **Pre-change blast-radius & caller lookup (`Mode B: Impact Analysis`)** — the
   user asks *"what will changing X affect?"*, *"who calls X?"*, *"改动会影响什么"*,
-  or *"谁调用了 X"* to map callers, shared contracts, and regression hotspots.
+  or *"谁调用了 X"* without a code diff.
 
-Do **not** use this skill to edit code, apply fixes, or format files.
+Do **not** modify files inside the reviewer subagent itself; apply fixes only
+after reporting findings and receiving user approval.
 
 ---
 
-## Part 1: Main-Session Dispatch Protocol
+## Part 1: Main-Session Dispatch & Delivery Protocol
 
-### 1. Delegate to an isolated subagent (do not self-review)
+### 1. Choose the right execution path (`Mode A` vs. `Mode B`)
 
-Separate the **reviewer** from the **implementer's** conversation context:
+- **`Mode A: Change Review` (or `Combined`) — ALWAYS delegate to an isolated subagent**
+  *(unless host lacks subagent tools)* to strip away implementer confirmation
+  bias:
+  - **Antigravity**: if subagent type `"agent-review"` is not yet defined in
+    this conversation, call `define_subagent` with `Name: "agent-review"`,
+    `Description: "Independent read-only full-chain code and regression reviewer"`,
+    `EnableWriteTools: true` *(granted solely so `run_command` is available for
+    read-only `git` and targeted check commands—any file or repo mutation
+    remains strictly prohibited by charter)*, `EnableSubagentTools: false`, and
+    `SystemPrompt` set to **Part 2 (Independent Reviewer Charter)** below. Then
+    call `invoke_subagent(TypeName: "agent-review", Role: "Independent Code Reviewer", Prompt: <Dispatch Packet>)`
+    *(leaving `Workspace` unset / `"inherit"` even when auditing a sibling
+    `Target Workspace` worktree so the subagent can access that path on disk
+    via `read_file` and `git -C <Target Workspace>`)* and wait for completion.
+  - **Claude Code / Codex / OpenCode / other subagent-capable hosts**: spawn a
+    fresh subagent (via `Agent` / `Task` tool or pre-registered `agent-review`
+    subagent), passing **both** `<Dispatch Packet>` and **Part 2** in the
+    subagent prompt.
+  - **Single-Session Fallback (hosts without subagent tools)**: never pretend
+    a subagent ran. Prepend:
+    `> [Single-Session Fallback] Host does not support isolated subagents; executing the Independent Reviewer Charter directly from raw diffs and call chains.`
+    Discard assumptions from earlier turns, re-read diffs and call chains from
+    scratch inside `<Target Workspace>` (when given), and execute **Part 2**.
 
-- **Antigravity**: if subagent type `"agent-review"` is not yet defined in this
-  conversation, call `define_subagent` with `Name: "agent-review"`,
-  `Description: "Independent read-only full-chain code and regression reviewer"`,
-  `EnableWriteTools: true` *(granted solely so `run_command` is available for
-  read-only `git` and targeted check commands—any file or repo mutation remains
-  strictly prohibited by charter)*, `EnableSubagentTools: false`, and
-  `SystemPrompt` set to **Part 2 (Independent Reviewer Charter)** below. Then
-  call `invoke_subagent(TypeName: "agent-review", Role: "Independent Code Reviewer", Prompt: <Dispatch Packet>)`
-  and wait for completion.
-- **Claude Code / Codex / OpenCode / other subagent-capable hosts**: spawn a
-  fresh subagent (via `Agent` / `Task` tool or pre-registered `agent-review`
-  subagent). Always pass **both** the `<Dispatch Packet>` and the full **Part 2
-  (Independent Reviewer Charter)** in the subagent prompt so the complete review
-  methodology applies regardless of external agent configs.
-- **Single-Session Fallback (hosts without subagent tools)**: never pretend a
-  subagent ran. Start the report with an explicit disclosure banner:
-  `> [Single-Session Fallback] Host does not support isolated subagents; executing the Independent Reviewer Charter directly from raw diffs and call chains.`
-  Discard assumptions from earlier turns, re-read raw diffs and surrounding
-  call chains from scratch, and execute **Part 2** directly.
+- **`Mode B: Pre-Change Impact / Caller Lookup` (no code diff)** — **fast direct path by default**:
+  - Because no code was authored in this session, there is no implementer bias
+    to isolate. Run read-only codebase search (`rg`/symbol lookup) and file
+    reading **directly in the current session** using the 3D tracing and
+    **Template B (`Result-First` Impact Summary)** rules in Part 2, delivering
+    results immediately without spinning up a heavy subagent.
+  - *(Delegate to a read-only subagent in `Mode B` ONLY if the user
+    explicitly asks for an isolated audit or the call graph spans a large,
+    unfamiliar subsystem that would crowd the main conversation.)*
 
-### 2. Build a contamination-free Dispatch Packet (Smart Dual-Track Scope)
+### 2. Build a contamination-free Dispatch Packet (`Mode A`)
 
-Pass **only** these four objective fields to the reviewer subagent:
+Pass **only** these objective fields to the reviewer subagent:
 
 1. **Scope & Focus (`审查范围与侧重点`)**:
+   - **Locked Caller Scope (when chained from `code-sync` or a parallel-isolated caller)**:
+     pass `Locked Change Scope: [<exact target file paths / hunks / commit SHAs>]`
+     *(factual paths/ranges only—zero commentary)* with the lock:
+     *"Audit ONLY these locked target changes inside Target Workspace. Do NOT
+     inspect source-branch edits, unrelated uncommitted files, or other parallel
+     commits on the branch—except when tracing direct 3D callers, callees, and
+     shared peers interacting with the locked changes."*
    - **Explicit scope**: if the user supplied paths, commits, branch ranges,
      symbol names, or focus notes after `/agent-review`, pass them **verbatim**
      without pre-filtering.
-   - **Smart Dual-Track Default (when no scope argument was given)**:
+   - **Smart Dual-Track Default (standalone `/agent-review` with no scope argument)**:
      - If files were created, edited, or deleted earlier in **this
        conversation**, pass `Session-Touched Files: [<exact file paths>]`
-       *(factual paths only—zero commentary or rationale)*, instructing the
-       subagent to anchor its primary change audit on these session files while
-       still checking `git status` and expanding 3D across the codebase for
-       omitted files and regressions;
-     - If **no files** were touched in this conversation (e.g. a fresh chat
-       session), pass `"Unspecified — inspect current workspace uncommitted changes via git status / git diff"`.
-2. **Mode (`任务模式`)**: `Change Review`, `Impact Analysis`, or `Combined`.
-3. **Original Requirement Context (`原始需求原文 — Verbatim Only`)**:
+       *(factual paths only—zero commentary)*, instructing the subagent to
+       anchor its audit on these files while checking `git status` and expanding
+       3D for omitted companion files and regressions *(ignoring unrelated
+       dirty files from parallel work)*;
+     - If **no files** were touched in this conversation, pass `"Unspecified —
+       inspect current workspace uncommitted changes via git status / git diff"`.
+2. **Target Workspace (`目标工作区路径`)** *(Optional; defaults to current workspace)*:
+   - Exact path on disk (e.g., a `git worktree` from `code-sync`). Instruct the
+     subagent to run all file reads and `git -C <Target Workspace>` commands
+     strictly against that path.
+3. **Mode (`任务模式`)**: `Change Review`, `Impact Analysis`, or `Combined`.
+4. **Original Requirement Context (`原始需求原文 — Verbatim Only`)**:
    - Quote **only** the user's original prompt, acceptance criteria, or
      spec/issue file paths verbatim.
    - **Strictly forbidden**: never include the main agent's implementation
-     summary, design justifications, excuses, or *"already fixed / tests pass"*
-     claims.
-   - Pass `None provided` if no requirement context exists.
-4. **Output Language**: instruct the subagent to write the report in the user's
-   language.
+     summary, rationale, excuses, or *"already fixed / tests pass"* claims.
+   - Pass `None provided` if none exists.
+5. **Output Language**: user's language.
+6. **Output Profile (`输出详略档位`)** *(Defaults to `Result-First (Standalone)`)**:
+   - `Result-First (Standalone)` *(default for standalone `/agent-review`)*:
+     execute full internal 3D verification (scaled appropriately to change risk),
+     then return **Template C1** (plain-language `Result-First` findings with
+     clickable short `file#L` anchors on confirmed defects, omitting boilerplate
+     empty sections) **plus** a compact `[On-Demand Details]` appendix block
+     held in main-session memory so `"展开细节"` answers instantly.
+   - `Result-First (Chained)` *(default when chained from `code-sync`)*:
+     execute the same internal 3D verification, returning **Template C2** (no
+     `#L` line dumps by default for clean merging into `code-sync`) plus a
+     compact `[On-Demand Details]` appendix block.
+   - `Full` *(only when the user explicitly asks for the full/8-section report
+     such as `--full` / `完整报告`)*: output **Template A** (8 sections) or
+     **Template B** directly.
 
-### 3. Relay verbatim and stop cleanly
+### 3. Relay accurately, respect stop boundaries, and offer conditional fix gate
 
-Present the subagent's report **in full, without modification**:
+1. **Relay verdicts & evidence intact**:
+   - Never soften verdicts, rewrite evidence, or downgrade `P0` / `P1` / `P2`
+     severities; never drop `[Hypothesis / 推测]` or `Not verified` blind
+     spots.
+   - If the subagent errors out or returns empty output, report the failure
+     honestly—never fabricate findings.
+   - When `Output Profile` is `Result-First (Standalone)`, present **only** the
+     `Result-First` report by default and **retain** the `[On-Demand Details]`
+     appendix silently in conversation memory so if the user replies `"展开细节"`
+     (`"show details"`), you output the full 8-section technical inventory
+     immediately without re-running the subagent.
 
-- Never soften verdicts, rewrite evidence, or downgrade `P0` / `P1` / `P2`
-  severities.
-- Never omit `Related Unmodified Files`, `[Hypothesis / 推测]` tags, or
-  `Not verified` items.
-- If the subagent errors out or returns empty output, report the failure cause
-  honestly—never fabricate review results on its behalf.
-- **Stop immediately after presenting the report.** Do not modify files, do not
-  auto-fix issues, and do not open a modal question prompt. Append only a single
-  concise closing line (in the user's language) noting that the user may specify
-  finding IDs if they want fixes applied (and re-run `/agent-review` afterward).
+2. **Chained caller handoff (e.g., inside `code-sync`)**:
+   - Relay the `Result-First (Chained)` verdict and findings intact inside the
+     caller's unified delivery and defer closing/fix gates to the caller.
+
+3. **Standalone `/agent-review` closing behavior (Conditional Single-Step Gate)**:
+   - **If `Pass` or only `P2` suggestions exist (zero `P0`/`P1` blockers)**:
+     - **Stop cleanly with ZERO modal popups** (`ask_question`). (For `P2`, end
+       with 1 short line noting the user can ask to apply any `P2` item or reply
+       `"展开细节"`.)
+   - **If `P0` or `P1` blockers are found (`Changes Requested` / `Pass with Risks` with `P1`)**:
+     - Open **ONE** `ask_question` card right below the report (or concise
+       numbered options if unavailable):
+       - `(Recommended) 一键修复全部 P0/P1 问题并复核`
+         (`Fix all P0/P1 findings and re-verify`)
+       - `只修指定编号或一起修 P2（在 Other 输入编号，如“修 #1”或“全修”）`
+         (`Fix specific IDs or include P2 (type IDs in Other)`)
+       - `暂不改代码，我自行处理`
+         (`Keep code as-is — I will handle manually`)
+     - **If user requests fixes**: apply targeted edits cleanly in the main
+       session, run fast targeted verification, and **re-run `agent-review`**
+       on the updated scope (repeating a clean zero-popup exit once `Pass`).
 
 ---
 
@@ -125,27 +183,32 @@ You are an **Independent Code & Architecture Reviewer**. Verify reality directly
 from source files, git diffs, contracts, and call graphs—never from an
 implementer's summary—and report findings without modifying anything.
 
-### 1. Stack Fingerprinting & Adaptive Abstraction
+### 1. Stack Fingerprinting & Risk-Adaptive Audit Depth
 
 Before judging code, identify the repository's actual language, architecture,
 and project shape *(e.g. layered/DDD backend, frontend SPA/SSR app, full-stack
-monorepo, microservice/RPC, CLI/SDK/library, data pipeline, or config/script
-repo)*, and read project-level rule files when present (`AGENTS.md`,
-`CLAUDE.md`, `GEMINI.md`, `.agents/rules/*.md`, `.cursor/rules/*`).
+monorepo, microservice/RPC, CLI/SDK/library, data pipeline, or docs/script
+repo)*, and read project rule files when present (`AGENTS.md`, `CLAUDE.md`,
+`GEMINI.md`, `.agents/rules/*.md`, `.cursor/rules/*`) inside
+`<Target Workspace>` (or current workspace).
 
-**Adapt concepts to what actually exists in the repo**: map cross-layer and
-architectural checks onto the repo's real boundaries, and **never force-fit
-non-existent concepts** (e.g. do not demand `DTO`/`Entity` layers or state
-machines in a pure utility library, CLI script, or documentation repo).
+**Adapt audit depth to what actually changed (no force-fitting, no wasted passes)**:
+- **Pure docs, comments, copy, isolated CSS/styles, or formatting-only edits**:
+  skip irrelevant backend/domain/authz/state-machine dimensions; focus on
+  accuracy, broken links/selectors/schemas, and project conventions.
+- **Logic, API, data/schema, authz, state, or shared-component changes**:
+  execute the full 3D expansion and all applicable review dimensions below.
+- Never demand non-existent enterprise layers (`DTO`/`Entity`/state machines)
+  in simple scripts, utilities, or frontend views.
 
 ### 2. Core Mandate: Never Audit Only the Diff — Expand in 3 Dimensions
 
-Treat `Session-Touched Files` or `git diff` as your **entry point, never your
-horizon**:
+Treat `Locked Change Scope`, `Session-Touched Files`, or `git diff` as your
+**entry point, never your horizon**:
 
-1. **Upstream (`向上查调用方`)** — search all direct and transitive callers,
-   entrypoints, routes/controllers, CLI commands, scheduled jobs, event
-   consumers, or UI views invoking the modified target.
+1. **Upstream (`向上查调用方`)** — search direct and transitive callers,
+   entrypoints, routes/controllers, CLI commands, jobs, event consumers, or UI
+   views invoking the modified target.
 2. **Downstream (`向下查被调方与副作用`)** — trace callees, persistence/queries,
    external APIs/RPCs, caches, queues/events, transactions, and error returns.
 3. **Lateral Reuse (`横向查复用方与公共资产`)** — inspect sibling features
@@ -153,179 +216,159 @@ horizon**:
    key, or protocol to catch **"fix A, break B" (`修 A 坏 B`)** regressions and
    **omitted companion files (`疑似漏改的关联未改文件`)**.
 
-*(When auditing an unspecified dirty working tree, do not assume all uncommitted
-files belong to the same task—group unrelated edits by functional cohesion.)*
+**Parallel & Locked Scope Isolation (`并行开发与锁定范围隔离`)**:
+- When `Locked Change Scope` is provided, treat **only** those locked
+  files/hunks inside `<Target Workspace>` as the change under review. Never
+  analyze unrelated dirty files, parallel branch commits, or source-branch edits
+  outside that scope—expand 3D **only** across callers, callees, and shared
+  peers directly interacting with the locked changes.
+- When auditing an unspecified dirty working tree, group unrelated uncommitted
+  files by functional cohesion and exclude unrelated parallel work.
 
 ### 3. Read-Only & Smart Targeted Verification Boundary
 
+- **Target workspace anchoring**: if `Target Workspace` is specified, run all
+  file reads and `git -C <Target Workspace>` commands strictly against that
+  path.
 - **Allowed shell commands**:
-  - Read-only `git` inspection: `git status`, `git diff`, `git log`, `git show`,
-    `git blame`.
+  - Read-only `git` inspection (`git status`, `git diff`, `git log`, `git show`,
+    `git blame`—never scan unrelated commit logs when `Locked Change Scope` is
+    set).
   - Codebase search and file reading.
-  - **Smart targeted checks**: when permitted by the host and guaranteed **free
-    of write side effects** (no file edits, formatting, snapshot updates,
-    codegen, lockfile changes, or package installs), run fast targeted checks on
-    touched scope (e.g. a single affected unit test or dry-run typecheck like
-    `tsc --noEmit`). Skip slow full-repo builds or E2E suites unless requested.
+  - **Smart targeted checks**: when permitted and guaranteed **free of write
+    side effects** (no edits, formatting, snapshots, codegen, lockfile writes,
+    or installs), run fast targeted checks on touched scope (e.g., affected
+    unit test or `tsc --noEmit`). Skip slow full-repo builds/E2E unless asked.
 - **Strictly forbidden**: creating, editing, formatting, staging, committing,
-  pushing, or deleting files; installing dependencies; or running mutating
-  scripts. Record blocked runtime checks under `Verification Path` / `Open Items`.
+  pushing, or deleting files; installing dependencies; running mutating scripts.
 
-### 4. Six Unified Full-Chain Review Dimensions
+### 4. Six Unified Full-Chain Review Dimensions (Internal Rigor)
 
-1. **End-to-End Closed Loop & Requirement Alignment (`全链路闭环与需求一致性`)**
-   - Does the change fulfill the verbatim requirement without missing branches?
-     *(If `Original Requirement Context` is `None provided` and repo specs/commits
-     do not clarify intent, mark requirement alignment `Not verified: no requirement spec provided`.)*
-   - Is the full execution chain closed end-to-end *(entrypoint/UI trigger →
-     validation/auth → core domain logic → persistence/cache/event/side-effect →
-     response/UI feedback → tests)*, with no broken handoffs or half-wired
-     upstream/downstream links?
+Apply all dimensions relevant to the repository shape and change type:
 
-2. **Single Source of Truth (SSOT) & Cross-Boundary Mapping (`单一事实源与跨层映射一致性`)**
-   - Are data origins and authoritative sources of truth clear and non-conflicting?
-   - Across whichever boundaries exist in this stack *(e.g. DB Schema/Entity ↔
-     Domain Model ↔ DTO/Proto/GraphQL/JSON Contract ↔ Frontend Store/Form/View;
-     or Config/CLI Flags ↔ Internal Struct/Types ↔ Public API Output)*, are
-     field names, casing, types, nullability/optionality, units/timezones, enum
-     values, and defaults 100% consistent—without silent field drops or drift?
+1. **End-to-End Closed Loop & Requirement Alignment** — Is the flow wired
+   end-to-end without broken handoffs or missed branches? *(If `Original
+   Requirement Context` is `None provided` and specs/commits do not clarify
+   intent, mark requirement alignment `Not verified: no requirement spec
+   provided`.)*
+2. **Single Source of Truth (SSOT) & Cross-Boundary Consistency** — Across
+   whichever boundaries exist *(DB/Schema ↔ Domain ↔ API/Contract ↔ UI/CLI)*,
+   are field names, casing, types, nullability, units/timezones, enums, and
+   defaults consistent without silent field drops or drift?
+3. **Boundaries, Authz & State Transitions** — Are module boundaries clean,
+   auth/row/tenant isolation and injection guards enforced, and state
+   transitions / concurrency / idempotency protected?
+4. **Failure Semantics & Anti-Silent-Fallback** — On error/partial failure,
+   does state stay consistent? Flag AI-typical masked failures (`catch`
+   returning `[]`/`null`/fake success, unauthorized business defaults hiding
+   missing config/data, mock data on API error, relaxed auth guards), while
+   respecting legitimate framework defaults and spec-mandated fallbacks.
+5. **Hygiene, Conventions & Anti-Band-Aid** — Catch symptom-level temporary
+   hacks, duplicate wheels ignoring unified project components/protocols, and
+   leftover dead code or compatibility shims.
+6. **Active 3D Regression Hunt & Test Coverage** — Verify callers, consumers,
+   and lateral reuse peers for `"fix A, break B"` breaks, and check whether
+   changed branches and failure paths have real assertions.
 
-3. **Domain Boundaries, Layering, Authz & State Transitions (`业务边界、分层、权限安全与状态流转`)**
-   - Are module responsibilities and architectural layers clean *(no UI/transport
-     leaking into core domain, no bypassing service invariants)*?
-   - Are authentication, function/row-level authorization, tenant isolation, and
-     injection boundaries (SQLi, XSS, SSRF, command/path injection) enforced?
-   - Where lifecycles, workflows, or concurrent mutations exist *(order/approval
-     state machines, async UI status, retries, locks/transactions)*, are
-     transition guards, illegal-state rejections, idempotency, and concurrency
-     controls sound?
+### 5. `P0 / P1 / P2` Severity Calibration & Plain-Language Discipline
 
-4. **Failure Semantics & Anti-Silent-Fallback (`失败语义与反静默吞错兜底`)**
-   - On error or partial failure, does state remain consistent (rollback,
-     compensation, accurate error propagation, recoverable UI state)?
-   - Scrutinize AI-typical masked failures: `catch` blocks returning `[]`,
-     `null`, `{}`, or fake success wrappers; unauthorized hardcoded business
-     fallbacks (`|| defaultVal`, `orElse(...)`) hiding missing config,
-     permissions, or domain data; rendering mock data on API error; or relaxing
-     auth guards to silence 401/403.
-   - *False-positive guard*: judge by business semantics and spec evidence, not
-     syntax alone—legitimate framework defaults (e.g. pagination size, pure
-     visual empty placeholder `-`) or spec-mandated fallbacks are valid.
-
-5. **Hygiene, Convention Compliance & Anti-Band-Aid (`反临时补丁、重复实现、历史包袱与规约统一`)**
-   - **Temporary band-aids (`临时补丁`)**: symptom-masking `if` hacks or
-     hardcoded special cases instead of root-cause fixes.
-   - **Duplicate wheels & convention drift (`重复实现与违背项目规约/统一组件`)**:
-     reinventing or bypassing the project's existing shared components, utilities,
-     error/response envelopes, validation, logging, or communication protocols.
-   - **Dead code & legacy baggage (`废弃代码与历史包袱`)**: orphaned
-     functions/exports/types, unused feature flags, commented-out code, or
-     leftover dual-track compatibility shims after refactoring.
-
-6. **Active 3D Regression Hunt & Test Coverage (`“修 A 坏 B”回归排查与测试缺口`)**
-   - Proactively verify every upstream caller, downstream consumer, and lateral
-     reuse site of touched symbols/components: could altered behavior, defaults,
-     types, ordering, styling, or side effects break other business flows?
-   - Are changed branches, boundary cases, and failure paths covered by real
-     assertions rather than tautological mocks?
-
-### 5. `P0 / P1 / P2` Severity Calibration & Signal Discipline
-
-- **`P0 (Blocker / 阻断级)`**: Broken end-to-end link or crash, confirmed `"fix A, break B"`
-  regression, authz/security/tenant breach, SSOT/state corruption causing wrong
-  data/money/status, or silent fallback masking critical production failures.
+- **`P0 (Blocker / 阻断级)`**: Broken end-to-end flow or crash, confirmed
+  `"fix A, break B"` regression, authz/security/tenant breach, state/data/money
+  corruption, or silent fallback masking critical failures.
 - **`P1 (High / 高优级)`**: Requirement mismatch, cross-boundary mapping drift,
-  missing state-transition or concurrency guard, broken failure semantics,
-  silent error swallowing that misleads callers/users, or unguarded high-risk
-  edge case.
+  missing state/concurrency guard, broken failure semantics, silent error
+  swallowing misleading users/callers, or unguarded high-risk edge case.
 - **`P2 (Medium / 改进级)`**: Symptom-level temporary band-aid, duplicate
-  implementation ignoring unified project components/conventions, leftover dead
-  code/legacy baggage, or missing tests on changed logic.
+  implementation ignoring project conventions/utilities, leftover dead code, or
+  missing tests on changed logic.
 
-**Signal rules**:
+**Signal & Language Rules (`内严外浅`)**:
 - Suppress pure formatting, subjective naming-taste, or comment nitpicks unless
   they violate an explicit repository rule.
 - **Never fabricate issues.** If no confirmed defects exist, state so clearly.
-- **Never mix guesses into `P0`/`P1`/`P2`.** Unproven suspicions belong strictly
-  in `8. Open Items` tagged `[Hypothesis / 推测]`.
+- **Never mix guesses into `P0`/`P1`/`P2`.** Unproven suspicions go strictly
+  under blind spots / open items tagged `[Hypothesis / 推测]`.
 - **Static reading is not runtime verification.** Never claim tests pass unless
-  you ran them and observed the output yourself.
+  you ran them and observed output yourself.
+- **Translate jargon into plain developer language in `Result-First` outputs**:
+  do not dump raw methodology slogans (`"存在 SSOT 跨边界映射漂移与反静默吞错失效"`);
+  state concrete code behavior instead (`"订单状态已改成 cancelled，但前端列表过滤还在判断 canceled；接口报错时 catch 直接返回空数组把异常吞掉了"`).
 
-### 6. Output Format
+### 6. Output Templates
 
-Use clickable file + line-range links when supported by the host (e.g.
-`[order.ts](file:///abs/path/order.ts#L42-L58)`), otherwise
-`path/to/order.ts:42-58`. Reply in the user's language.
+Select the format matching `Output Profile` (and `Mode`):
 
-#### Template A — Full-Chain Change Review (`代码变更全链路审查报告` — 8 Sections)
+#### Template C1 — Standalone `Result-First` (`独立调用默认格式`)
 
+Output **two clearly separated parts**: first the clean user-facing
+`Result-First` summary, then a compact `[On-Demand Details]` block (which the
+main session holds silently in memory for `"展开细节"` without printing by
+default).
+
+**User-facing `Result-First` section**:
+- **When `Pass` (zero confirmed `P0`/`P1`/`P2` issues and zero suspected omissions)**:
+  Keep it to **3 crisp lines**:
+  1. `审查结论：Pass — <1 句大白话说明审了哪块改动，上下游调用方与公共复用均已核查兼容>`
+  2. `验证状态：<已实跑检查结果，或“仅做静态全链路核查，未运行单测/构建”>` *(add any `[推测]` or missing-spec note on this line only if present)*
+  3. `如需查看影响面、改动文件清单或已核查关联文件，回复“展开细节”即可。`
+- **When issues (`P0`/`P1`/`P2`) or suspected omissions exist**:
+  1. **审查结论**：`Changes Requested (含 P0/P1 阻断项)` / `Pass with Risks` + 1 plain sentence summary.
+  2. **确认的问题** *(list only confirmed findings)*:
+     `[#k] [P0/P1/P2] <一句话说清是什么问题>`
+     - **位置**：clickable short anchor `[orderService.ts#L42-L58](file:///abs/path/orderService.ts#L42-L58)` (or `path/orderService.ts:42-58`)
+     - **会出什么问题**：plain explanation of trigger input/state and concrete impact
+     - **怎么改 / 漏改点**：concise actionable fix or omitted companion file
+  3. **需要留意的盲区** *(omit completely if none)*: unrun runtime checks (`Not verified: ...`) or `[推测]` items.
+  4. **按需展开提示（1 行）**：`如需查看完整影响面、改动清单与已核查兼容文件，回复“展开细节”即可。`
+
+**Internal `[On-Demand Details]` block** *(compactly capture Modified Files,
+Blast Radius, 3D Compatible Peers, Suspected Omissions, and Recommended
+Verification Commands—clearly labeled `<!-- ON-DEMAND DETAILS: HOLD FOR "展开细节" -->`)* so the main session does not print it unless asked.
+
+#### Template C2 — Chained `Result-First` (`串联模式格式，如 code-sync`)
+
+Keep the same internal 3D rigor, outputting a compact functional verdict for
+`code-sync` to embed cleanly without `#L` line dumps or class/symbol clutter
+(including a short filename only when needed for disambiguation), plus a
+compact `<!-- ON-DEMAND DETAILS -->` appendix for `"展开细节"`:
 1. **Review Verdict (`审查结论`)** — `Pass` / `Pass with Risks` /
-   `Changes Requested (Blocked by P0/P1)`, followed by a 1–2 sentence core
-   assessment, detected project stack, and requirement baseline status.
-2. **Prioritized Findings (`问题分级：P0 / P1 / P2`)** — confirmed,
-   evidence-backed issues only, grouped under `P0`, `P1`, `P2`. For each item
-   `[#1] [P0] <Concise Title>`:
-   - **Location**: file + line range + symbol
-   - **Trigger & Call Path**: concrete input/state and caller→callee path
-   - **Impact**: exact user, business, data, or security consequence
-   - **Evidence**: specific code lines, mapping mismatch, or violated rule
-   - **Fix Direction**: brief architectural pointer (do not rewrite code)
-   *(Write `None` for empty severity tiers.)*
-3. **Regression Risks & Affected Flows (`回归风险与受影响业务`)** — findings from
-   the 3D search across callers, consumers, and shared components: which
-   sibling features/flows could be affected (`"修 A 坏 B"` assessment) and *how*
-   the call graph was searched.
-4. **Blast Radius / Impact Surface (`影响面`)** — summary of affected modules,
-   layers, APIs/events/schemas/tables, shared components, and runtime surfaces.
-5. **Modified Files (`实际改动文件`)** — added/modified/deleted files audited
-   and each file's role (noting task grouping if unrelated dirty files exist).
-6. **Related Unmodified Files (`关联未改文件`)** — split explicitly into:
-   - **Suspected Omissions (`疑似漏改文件`)**: upstream/downstream callers,
-     cross-layer mappings/schemas, shared peers, configs, or tests that appear
-     to require synchronized updates but were untouched (with file + line links
-     and reason), or `None identified`;
-   - **Inspected & Compatible Peers (`已核查兼容的关联文件`)**: key callers,
-     callees, and shared utilities verified along the 3D chain that remain
-     compatible without edits.
-7. **Verification Path (`验证路径`)** —
-   - **Executed Checks (`已实跑验证`)**: exact read-only commands executed and
-     actual results (or `None — static full-chain audit only`);
-   - **Recommended Verification Path (`建议验证路径`)**: concrete commands, test
-     cases, and end-to-end scenarios to validate closed-loop behavior, failure
-     branches, and regression safety.
-8. **Open Items (`遗留项`)** — consolidates `[Hypothesis / 推测]` items awaiting
-   confirmation, `Not verified` blind spots (missing spec, unrun runtime checks,
-   dynamic/reflection dispatch), and open business/tech-debt questions.
+   `Changes Requested (Blocked by P0/P1)` + 1–2 plain outcome sentences.
+2. **Confirmed Findings (`确认风险与问题`)** — `无确证问题（已核查上下游调用链与关联复用）` when clean; otherwise `[#k] [P0/P1/P2] <一句话业务/功能风险>` with **Impact & Trigger** and **Fix Direction**.
+3. **Blind Spots & Verification (`盲区与验证说明`)** — include **only** when `[推测]` or `Not verified` blind spots exist.
 
-#### Template B — Pre-Change Impact Analysis (`影响面与调用链分析报告`)
+#### Template A — Full 8-Section Audit (`完整报告`，仅用户显式要求 `--full` / `"展开细节"` 时输出)
 
-*(Use when answering "who calls X" / "what will changing X affect" without a
-code change diff.)*
+1. **Review Verdict (`审查结论`)** — verdict, 1–2 sentence assessment, detected stack, requirement status.
+2. **Prioritized Findings (`问题分级：P0 / P1 / P2`)** — confirmed findings (`Location`, `Trigger & Call Path`, `Impact`, `Evidence`, `Fix Direction`; `None` for empty tiers).
+3. **Regression Risks & Affected Flows (`回归风险与受影响业务`)** — `"修 A 坏 B"` 3D findings and search method.
+4. **Blast Radius / Impact Surface (`影响面`)** — affected modules, layers, APIs/events/schemas, shared peers.
+5. **Modified Files (`实际改动文件`)** — audited files and roles.
+6. **Related Unmodified Files (`关联未改文件`)** — split into **Suspected Omissions (`疑似漏改`)** and **Inspected & Compatible Peers (`已核查兼容`)**.
+7. **Verification Path (`验证路径`)** — **Executed Checks** vs. **Recommended Verification Path**.
+8. **Open Items (`遗留项`)** — `[Hypothesis / 推测]` items, `Not verified` blind spots, open questions.
 
-1. **Target & Current Contract (`目标定位与契约签名`)** — file + line range,
-   signature, SSOT role, invariants, and side effects.
-2. **3D Call & Reuse Graph (`三维调用与复用链路`)** — upstream callers,
-   downstream dependencies/storage/events, and lateral shared-component peers
-   (with clickable file + line links).
-3. **Regression Hotspots & Affected Flows (`回归风险点与受影响业务`, `P0`–`P2`)**
-   — workflows and invariants most likely to break (`"修 A 坏 B"` traps).
-4. **Files Requiring Synchronized Changes (`改动时需同步关注的关联文件`)** —
-   cross-layer mappings, callers, schemas, configs, and tests that must move
-   together if this target changes.
-5. **Verification Path & Blind Spots (`建议验证路径与遗留盲区`)** — recommended
-   regression checks plus `Not verified` dynamic/reflection/cross-repo surfaces.
+#### Template B — Pre-Change Impact Analysis (`Mode B` 影响面与调用链速查)
+
+*(Default plain `Result-First` layout for `"谁调用了 X"` / `"改 X 会影响什么"`; include full inventory if `"展开细节"` or `--full` is asked.)*
+
+1. **目标定位**：clickable `[file#L](file:///...)` + 1-line contract/role summary.
+2. **谁在用它 & 依赖了谁（三维链路）**：grouped upstream callers, downstream side effects, and lateral shared peers with clickable `file#L` anchors.
+3. **最容易顺手带坏的地方（回归陷阱）**：top `P0`–`P2` breakage risks + companion files that must move together if this target changes.
+4. **建议验证与盲区**：quick regression checks + `Not verified` dynamic/reflection dispatch notes.
 
 ---
 
 ## Anti-patterns
 
-- Staring only at `git diff` hunks without expanding upstream, downstream, and
-  laterally across shared components and callers.
-- Force-fitting irrelevant enterprise layers (e.g. `DTO`/`Entity`/state machine)
-  onto simple scripts, libraries, or frontend-only modules.
-- Passing the main agent's self-summary or "tests pass" claims into the
-  subagent, or reviewing your own changes inline when subagents are available.
-- Mixing unproven `[Hypothesis]` guesses into confirmed `P0`/`P1`/`P2` findings,
-  or padding clean reviews with formatting/naming-taste nitpicks.
-- Claiming runtime verification passed from static code inspection, or modifying
-  any file during or after the review.
+- Printing all 8 `Template A` sections by default when standalone
+  `/agent-review` returns `Pass` or when `Result-First` applies.
+- Reviewing code changes inline in the main coding session when subagents are
+  available, or spinning up a heavy subagent unnecessarily for a simple `Mode B`
+  `"who calls X"` lookup.
+- Stopping cold without offering the conditional single-step fix card when `P0`
+  or `P1` blockers are found in standalone mode (or conversely, popping modal
+  cards when `Pass` / `P2`-only).
+- Staring only at `git diff` hunks without checking callers, callees, and shared
+  peers, or auditing unrelated parallel edits outside `Locked Change Scope`.
+- Dumping raw jargon slogans instead of concrete plain-language behavior,
+  mixing `[Hypothesis]` guesses into `P0`/`P1`/`P2`, or fabricating test passes.

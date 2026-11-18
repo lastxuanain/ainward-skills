@@ -2,17 +2,18 @@
 
 English | [简体中文](README.zh-CN.md)
 
-> Interactive, intent-driven cross-branch code synchronization and semantic porting: anchors source branch, target branch, and sync scope, extracts the true engineering intent behind your changes without switching branches, audits the target branch across four semantic states (*Already Synced*, *Superseded by Refactor*, *Missing/Regressed*, *Semantic Conflict*) instead of blind `cherry-pick` or copy-paste, gates on a **Minimal Sync Plan (`最小改动清单`)**, re-adapts idiomatically to the target's current architecture & SSOT, and closes with targeted verification and a **Sync Sign-Off Table (`同步核销回执表`)**.
+> Interactive, intent-driven cross-branch code synchronization and semantic porting with **strict parallel-conversation isolation**, **Smart Fast-Path execution**, **Result-First reporting**, and **automatic post-merge `agent-review`**: locks strictly to your requested scope (e.g., current conversation edits only—ignoring unrelated parallel commits), inspects the target branch snapshot read-only without scanning unrelated commit history, re-adapts idiomatically to target SSOT, runs targeted verification, and automatically chains an isolated Result-First [`agent-review`](../agent-review/README.md) on the merged changes.
 
 ## The Problem
 
-When porting hotfixes, features, or in-progress edits from one branch or workspace to a diverged target branch (like `main`), raw Git commands and naive AI prompts routinely fail in three ways:
+When porting hotfixes, features, or in-progress edits from one branch or parallel session onto a busy target branch (like `main`), raw Git commands and naive AI prompts routinely fail in four ways:
 
-- **Blind `cherry-pick` & legacy copy-pasting**: When the target branch has refactored directories, split modules, or migrated its Single Source of Truth (SSOT), replaying old hunks either triggers messy conflicts or reintroduces obsolete abstractions into the new architecture;
-- **Clean diff, broken semantics**: A patch can apply without syntax conflicts while breaking newly added state guards, side effects, error envelopes, or shared callers on the target branch;
-- **Clobbered working trees**: Running `git checkout` or unprompted `stash` / `commit` while you still have uncommitted edits on your source branch disrupts your active workspace.
+- **Blind `cherry-pick` & legacy copy-pasting**: When the target branch has refactored directories or migrated its Single Source of Truth (SSOT), replaying old hunks either triggers messy conflicts or reintroduces obsolete abstractions;
+- **Parallel-session scope bleed**: When multiple tasks or conversations run concurrently on the same repo or `main` branch, naive prompts sweep other sessions' commits or unrelated dirty files into analysis and review;
+- **Noisy line-number & symbol dumps**: Dumping dozens of `#L` line links, class names, and pre-execution boilerplate tables buries the actual outcome you care about;
+- **Clobbered working trees & unreviewed merges**: Running unprompted `git checkout` or `git stash` disrupts parallel work, while landing adapted changes without an independent 3D regression check risks `"fix A, break B"` regressions.
 
-`code-sync` turns cross-branch merging into a **human-gated semantic adaptation workflow**—and pairs naturally with [`agent-review`](../agent-review/README.md) (for an isolated 3D regression audit afterward) and [`work-report`](../work-report/README.md) (for a paced walkthrough).
+`code-sync` turns cross-branch merging into a **parallel-safe, result-first semantic adaptation + independent review loop**.
 
 ## Quick Trigger
 
@@ -28,35 +29,32 @@ Invoke the skill in chat whenever you need to sync or port changes to another br
 
 ```mermaid
 flowchart LR
-    A["1. Fast Git Sensing + On-Demand Input Card"] --> B["2. Zero-Checkout Read-Only Comparison (with origin Freshness Check)"]
-    B --> C["3. 4-State Semantic Audit + Minimal Sync Plan"]
-    C --> D{"4. Single-Step Merged Gate"}
-    D -- "Approve plan (+ resolve conflicts & landing mode)" --> E["5. Target-Native SSOT Adaptation + Targeted Checks"]
-    D -- "Adjust plan" --> C
-    D -- "Audit only" --> F["Stop cleanly"]
-    E --> G["6. Sync Sign-Off Table + Conditional Worktree/Stash Cleanup"]
+    A["1. Fast Git Sensing + Strict Scope Lock"] --> B["2. Target Snapshot Audit (Zero Parallel Log Scan)"]
+    B --> C{"3. Smart Routing"}
+    C -- "Zero edits needed" --> Z["Result-First Summary (Clean Exit)"]
+    C -- "Conflict / Lag / Target Dirty Clash" --> D["Single Conflict/Alignment Gate"]
+    C -- "Conflict-Free (Smart Fast-Path)" --> E["4. Isolated Target Adaptation + Targeted Checks"]
+    D --> E
+    E --> F["5. Auto Post-Merge agent-review (Locked Target Scope)"]
+    F --> G["6. Unified Result-First Delivery + Conditional Closing Gate"]
 ```
 
-### 1. Smart Sensing & On-Demand Three-Input Anchoring (*Source · Target · Scope*)
+### 1. Strict Bidirectional Parallel Isolation
 
-Starts with a fast, offline read-only Git probe (current branch, dirty files, session-edited files, mounted `git worktree` paths, and cached `origin/*` refs). Only missing or ambiguous parameters are requested in **one combined question card** with smart `(Recommended)` defaults:
+- **Source-side hard lock**: When you ask to sync **Session Changes (`本次对话的改动`)** (or specific commits/files), `code-sync` treats that scope as a strict allowlist—extracting **only** edits and commits authored in the current conversation. Other commits on the branch and unrelated dirty workspace files are silently ignored (and if no edits occurred in the conversation, it prompts cleanly instead of silently scanning branch history).
+- **Target-side snapshot isolation**: Reads **only** the current snapshot of target files and direct 3D callers/peers relevant to the synced units—never browsing unrelated parallel commits on `main` unless a direct line-level or contract conflict occurs, and never touching unrelated dirty files on target.
 
-- **4 Adaptive Sync Scopes**: ① **Session Changes** (inherits full conversational fix intent) ② **Workspace Uncommitted Changes** (flags unrelated dirty files rather than blindly bundling them) ③ **Source Branch Commits (`target..source`)** ④ **Specific Commits / File Paths**.
-- **Zero-Blocking Remote Freshness Check**: Never stalls on unprompted `git fetch`, yet compares local `<target>` against cached `origin/<target>`—alerting you and auditing against the newer ref whenever local `<target>` lags behind.
+### 2. Smart Fast-Path & Safe Isolated Landing
 
-### 2. Zero-Checkout 4-State Semantic Audit
+- **Zero redundant popups when clean**: When parameters are clear, zero semantic/dirty conflicts exist, local `<target>` does not lag `origin/<target>`, and landing is non-destructive, `code-sync` skips the pre-execution checklist gate and runs straight through adaptation, targeted verification, and post-merge review.
+- **Pauses only when judgment is needed**: Surfaces a concise plain-language summary and **one** merged gate only when there is a semantic conflict, same-file parallel dirty clash on target, local `<target>` lagging cached `origin/<target>`, or an explicit workspace decision.
+- **Non-disruptive landing**: Edits only the synced files when already on `<target>` or a clean mounted `<target>` worktree; automatically creates an isolated sibling `git worktree` when `<target>` is unmounted, never running `git stash` or switching a dirty source branch unprompted.
 
-Reads the target branch strictly via `git show / grep / log <target>` (or an existing mounted target worktree) without touching your active branch, tracing moved or refactored modules via `git log --follow` and symbol search to classify every logical change unit:
+### 3. Result-First Output & Automatic Post-Merge `agent-review`
 
-1. **`Already Synced (已同步)`** — Equivalent logic already exists on target (backed by target file + line citations). Skipped.
-2. **`Superseded by Refactor (已被后续重构覆盖)`** — Target redesigned the architecture so the root cause is genuinely eliminated (verified across main flow, state, side effects, and error paths; any residual gap is split out for adaptation).
-3. **`Missing or Regressed — Needs Adaptation (仍缺失或存在回归)`** — Added to the **Minimal Sync Plan**, re-adapted idiomatically to the target branch's **current architecture, shared components, and SSOT** while preserving **main flow, data state, side effects, error handling, and 3D call-chain safety**.
-4. **`Semantic Conflict / Product Divergence (存在语义冲突或业务分歧)`** — Target intentionally changed contracts or business rules; clear options with trade-offs are surfaced for your decision rather than guessed.
-
-### 3. Single-Step Merged Gate & Safe Isolated Landing
-
-- **One Gate, Zero Popup Chains**: After presenting the 4-State Audit Table and Minimal Sync Plan, plan approval, conflict choices (if any), and cross-branch landing mode (defaulting to an **isolated temporary `git worktree`** when your source workspace is dirty, or `git stash` + branch switch) are merged into **one** confirmation turn.
-- **Targeted Verification & Conditional Cleanup**: Runs fast checks on the target workspace (marking unrun checks honestly as `Not verified`), outputs a **Sync Sign-Off Table (`同步核销回执表`)**, and **never runs `git commit` or `git push` automatically**. Stops cleanly on normal landings; opens a cleanup choice **only** when a temporary `worktree` or `git stash` was created so you can either inspect uncommitted changes or commit on target and auto-clean/restore your source workspace.
+- **Outcomes + short filenames first, details on demand**: Hides `#L` line numbers, class/symbol walls, and audit jargon by default—presenting clean functional outcomes alongside **short target filenames** (`synced / skipped / touched files / verified / review verdict`). When checks skip inside a newly created temporary worktree due to missing local dependencies, states why in 1 plain sentence with the exact command to run back on `<target>`. Reply `"show details"` (`"展开细节"`) anytime for clickable line links and full call-chain proof.
+- **Seamless `agent-review` handoff**: Whenever target files are modified, `code-sync` automatically invokes [`agent-review`](../agent-review/README.md) with a locked `Target Workspace` path, `Locked Change Scope` (only the synced changes—no source or parallel-task bleed), verbatim requirement context (zero self-justification bias), and `Result-First (Chained)` output profile.
+- **Clean closing**: Stops with zero popups when `Pass` and no temporary `worktree`/`stash` was created; otherwise opens a single closing gate (defaulting `(Recommended)` to committing on `<target>` and auto-cleaning the temporary worktree whenever review passes without `P0`/`P1` blockers).
 
 ## Installation
 

@@ -1,60 +1,57 @@
-# agent-review (全链路独立代码审查与影响面分析)
+# agent-review (Independent Full-Chain Code Review & Impact Analysis)
 
 English | [简体中文](README.zh-CN.md)
 
-> Independent, read-only full-chain code review and 3D call-graph regression analysis via an isolated subagent: expands beyond `git diff` across upstream callers, downstream dependencies, and lateral shared-component reuse to audit closed loops, single-source-of-truth mappings, `"fix A, break B"` regressions, and omitted companion files—without touching your code.
+> Independent, read-only full-chain code review and 3D call-graph regression analysis: keeps strict internal rigor across upstream callers, downstream dependencies, and lateral shared-component reuse (`"fix A, break B"`) while presenting **developer-friendly `Result-First` findings by default**—3-line clean exits on `Pass`, clickable `file#L` anchors and plain-language risk explanations when defects exist, a conditional 1-click `P0/P1` fix loop, and fast direct `Mode B` caller lookups.
 
 ## The Problem
 
-Conventional AI code reviews tend to stare only at the green and red lines inside `git diff`—and when the same session that wrote the code reviews itself, confirmation bias takes over:
-- **Diff tunnel vision**: broken upstream/downstream handoffs, cross-layer schema/mapping drift, and companion files that *should* have been updated together go unnoticed;
-- **Missed `"fix A, break B"` regressions**: changes to shared utilities, components, or contracts silently break sibling workflows that were never searched;
-- **Unchallenged AI anti-patterns**: `catch` blocks silently returning `[]`, unauthorized fallback defaults masking missing config, symptom-masking band-aids, duplicate wheels, and leftover dead code slip straight through.
+Conventional AI code reviews tend to hit one of two bad extremes—shallow `"looks good to me"` self-reviews on `git diff`, or bloated 8-section audit walls even when nothing is wrong:
 
-`agent-review` delegates the audit to a **fresh, zero-bias, read-only subagent** that fingerprints your repository's real stack and architecture (never force-fitting irrelevant enterprise layers) and delivers a structured 8-section engineering audit.
+- **Diff tunnel vision & `"fix A, break B"`**: broken cross-layer mappings, silent `catch` fallbacks returning `[]`, omitted companion files, and broken sibling callers go unseen;
+- **Wall-of-text fatigue**: printing empty severity sections and long lists of compatible files even on a clean `Pass`, buried under heavy architectural jargon;
+- **Dead-end reports & slow trivial lookups**: forcing you to re-type fix commands when `P0/P1` blockers appear, or spinning up a full subagent just to answer `"who calls X?"`.
+
+`agent-review` keeps **deep engineering rigor on the inside** and **crisp, actionable clarity on the outside**.
 
 ## Quick Trigger
 
-Run before committing, opening a PR, or modifying shared modules:
+Run before committing, opening a PR, or changing shared code:
 
 - **Review current-session or workspace changes**: `/agent-review` or `"review my changes"`, `"审查一下"`, `"帮我看看这次改动"`
-- **Scoped or focused audit**: `/agent-review src/order/ focus on state transitions and authz`, `/agent-review HEAD~2..HEAD`
-- **Pre-change impact & caller analysis**: `/agent-review what will changing OrderService.cancel affect?`, `"who calls parseToken"`, `"谁调用了 parseToken"`
+- **Focused scope or full 8-section report**: `/agent-review src/order/ focus on authz`, `/agent-review --full`
+- **Fast pre-change caller/impact lookup**: `/agent-review what will changing OrderService.cancel affect?`, `"who calls parseToken"`, `"谁调用了 parseToken"`
 
 ## How It Works
 
 ```mermaid
 flowchart LR
-    A["1. Trigger /agent-review"] --> B["2. Build Contamination-Free Packet (Session Files + Verbatim Goal)"]
-    B --> C["3. Spawn Read-Only Subagent (Auto-Fingerprint Repo Stack)"]
-    C --> D["4. Expand 3D: Upstream Callers + Downstream + Lateral Reuse"]
-    D --> E["5. 6 Full-Chain Dimensions + Smart Targeted Checks"]
-    E --> F["6. Relay Verbatim P0/P1/P2 8-Section Report & Stop"]
+    A["1. Trigger /agent-review"] --> B{"Change Review (Mode A) vs Caller Lookup (Mode B)?"}
+    B -- "Mode B: Who calls X" --> C["Fast direct read-only 3D search -> crisp impact summary"]
+    B -- "Mode A: Code Changes" --> D["Spawn isolated read-only subagent (risk-adaptive depth)"]
+    D --> E["Upstream callers + Downstream + Lateral reuse across 6 dimensions"]
+    E --> F{"Result-First Layered Output"}
+    F -- "Pass / P2 only" --> G["Clean zero-popup finish (8-section details on 'show details')"]
+    F -- "P0/P1 blockers found" --> H["1-step fix gate: Fix all P0/P1 & re-verify / Pick IDs / Keep as-is"]
 ```
 
-### 6 Architecture-Adaptive Review Dimensions
+### Internal Rigor, Plain-Language Delivery
 
-The reviewer subagent first identifies your project's actual shape (layered/DDD backend, SPA/SSR frontend, full-stack monorepo, CLI/SDK library, or script/config repo) and maps universal engineering checks onto the boundaries that actually exist:
+For code changes (`Mode A`), the isolated subagent fingerprints your stack (never force-fitting non-existent layers) and scales depth by what changed (skipping irrelevant heavy checks on pure docs/styles while running full 3D checks on logic, API, data, and shared helpers):
 
-1. **End-to-End Closed Loop & Requirement Alignment** — Verifies that the entire execution chain (entrypoint → validation/auth → core logic → persistence/cache/events → response/UI state → tests) is wired end-to-end without missing branches.
-2. **Single Source of Truth (SSOT) & Cross-Boundary Mapping** — Checks lossless alignment across storage schemas/entities ↔ domain models ↔ API/RPC/event contracts ↔ client stores/views/CLI outputs (field names, nullability, types, units, enums, defaults).
-3. **Domain Boundaries, Layering, Authz & State Transitions** — Audits clean layer separation, authentication & row/tenant isolation, injection surfaces, state-machine transition guards, idempotency, and concurrency safety.
-4. **Failure Semantics & Anti-Silent-Fallback** — Ensures consistent rollback/error states and flags AI-typical masked failures (`catch` returning `[]`/fake success, unauthorized business defaults hiding missing config, mock data rendered on API error, relaxed auth guards) while respecting legitimate framework defaults.
-5. **Hygiene, Conventions & Anti-Band-Aid** — Catches symptom-level temporary hacks, duplicate implementations bypassing unified project components/protocols, and leftover dead code or legacy compatibility shims.
-6. **Active 3D Regression Hunt (`"Fix A, Break B"`) & Test Coverage** — Searches every caller, consumer, and lateral reuse site to verify sibling flows remain intact and critical branches have real test assertions.
+1. **End-to-End Closed Loop & Requirement Alignment** — checks the full execution flow without broken handoffs or missing branches.
+2. **Cross-Boundary Contract Consistency** — verifies field names, types, nullability, enums, units, and defaults across storage, domain, APIs, and UI/CLI.
+3. **Boundaries, Authz & State Safety** — audits layer separation, auth/row/tenant isolation, injection surfaces, state guards, and concurrency.
+4. **Failure Semantics & Anti-Silent-Fallback** — flags masked failures (`catch` returning `[]`/fake success, unauthorized business defaults, mock data on API error) while respecting legitimate defaults.
+5. **Hygiene & Anti-Band-Aid** — catches symptom hacks, duplicate wheels bypassing shared utilities, and leftover dead code.
+6. **3D Regression Hunt (`"Fix A, Break B"`) & Test Coverage** — traces upstream callers, downstream side effects, and lateral shared peers to verify sibling workflows stay intact.
 
-### Standard 8-Section Engineering Report
+### Standalone `Result-First` & Conditional Fix Loop
 
-Every change review delivers 8 structured, high-signal sections (suppressing trivial formatting nitpicks and isolating unproven guesses from confirmed defects):
-
-1. **Review Verdict** — `Pass` / `Pass with Risks` / `Changes Requested` plus executive summary.
-2. **Prioritized Findings (`P0 / P1 / P2`)** — Confirmed, evidence-backed defects only, with clickable file + line links, trigger path, impact, proof, and fix direction.
-3. **Regression Risks & Affected Flows** — Concrete results from the 3D caller/shared-component hunt (`"fix A, break B"` analysis).
-4. **Blast Radius / Impact Surface** — Affected modules, layers, contracts/schemas/events, and shared assets.
-5. **Modified Files** — Audited added/modified/deleted files and their roles.
-6. **Related Unmodified Files** — Split into **Suspected Omissions** (untouched companion files that appear to need synchronized updates) and **Inspected & Compatible Peers**.
-7. **Verification Path** — **Executed Read-Only Checks** vs. **Recommended End-to-End Verification Steps**.
-8. **Open Items** — `[Hypothesis]` suspicions, `Not verified` blind spots, and open domain/tech-debt questions.
+- **3-line `Pass` with zero popups**: when zero issues exist, prints a crisp 3-line verdict + check status and stops cleanly.
+- **Confirmed defects first, noise hidden**: lists confirmed `P0/P1/P2` bugs in plain developer language with clickable short `file#L` anchors, concrete breakage triggers, and fix directions. Full 8-section inventories (`Modified Files`, `Inspected & Compatible Peers`, `Blast Radius`, etc.) stay silently cached—reply `"show details"` (`"展开细节"`) anytime to inspect them.
+- **1-click `P0/P1` closure**: when `P0` or `P1` blockers appear in standalone mode, opens one action card to **fix all `P0/P1` issues and re-verify** (or pick IDs / skip).
+- **Chained caller isolation (`code-sync`)**: supports `Target Workspace`, `Locked Change Scope`, and `Result-First (Chained)` output for clean embedding inside [`code-sync`](../code-sync/README.md).
 
 ## Installation
 

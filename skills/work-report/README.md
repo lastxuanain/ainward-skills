@@ -1,64 +1,51 @@
-# work-report (工作汇报)
+# work-report (Result-First Change Walkthrough)
 
 English | [简体中文](README.zh-CN.md)
 
-> Paced, item-by-item work report and interactive code walkthrough: the agent briefs you like an accountable engineer reporting to a technical lead—opening with an executive snapshot and tiered agenda, presenting clickable code evidence and hidden trade-offs, answering interrogations with call-chain proof, logging directives without derailing flow, and closing with a consolidated Rectification List (`整改清单`) and sign-off execution.
+> Result-First, low-friction change walkthrough after implementing or modifying code: gives you **one scannable screen** in plain peer-engineer language—covering what changed (with short filenames, hiding `#L` clutter), candid compromises/assumptions (`⚠️`), and real verification status—without repeating biased self-reviewed call-chain checks (left to [`agent-review`](../agent-review/README.md)) or trapping you in turn-by-turn modal popups.
 
 ## The Problem
 
-When an AI agent finishes implementing a feature or modifying multiple modules, it typically dumps a long, optimistic wall of text. As the technical decision-maker, you run into three recurring pain points:
+After an agent finishes writing or updating code, developers typically run into one of two bad extremes—an opaque wall of optimistic prose, or a tedious multi-turn approval ceremony:
 
-- **Cognitive overload & lost context**: Prose summaries gloss over critical details, while raw `git diff` hunks bury architectural flow under scattered line edits;
-- **Hidden assumptions & silent shortcuts**: Unstated design trade-offs, implicit assumptions, or band-aid workarounds get rationalized away instead of surfaced;
-- **Derailed review flow**: Pointing out an issue in module 2 causes the agent to immediately start rewriting code, leaving modules 3–6 completely unreviewed.
+- **Modal click fatigue**: Having to click through 4–5 consecutive confirmation popups just to read what changed across a few modules;
+- **Buried shortcuts & unrun checks**: Silent workarounds, hardcoded assumptions, or skipped tests getting lost inside verbose formatting boilerplate;
+- **Overlapping self-reviews**: Asking the same coding session to assert `"no downstream impact"` wastes time and suffers from confirmation bias—independent bug and regression hunting belongs in [`agent-review`](../agent-review/README.md).
 
-`work-report` turns post-change review into a **leader-paced interactive walkthrough** (and pairs naturally with [`agent-review`](../agent-review/README.md): `agent-review` runs an isolated subagent audit to hunt bugs, while `work-report` aligns human understanding and captures your exact architectural directives).
+`work-report` makes change handoffs **fast to scan, honest about shortcuts, and effortless to adjust**.
 
 ## Quick Trigger
 
-After an agent finishes writing or modifying code, trigger the workflow in chat:
+After an agent writes or modifies code, run in chat:
 
-- **Brief current session or workspace changes**: `/work-report`, `"work report"`, `"walk me through the changes"`, `"brief me on the changes"`, `"step-by-step report"`, `"向我汇报"`, `"逐项汇报"`
-- **Brief a specific scope**: `/work-report src/auth/`, `/work-report HEAD~2..HEAD`
+- **Walk through current session or workspace changes**: `/work-report`, `"work report"`, `"walk me through the changes"`, `"brief me on the changes"`, `"向我汇报"`, `"汇报一下这次改动"`
+- **Scope to specific paths or commits**: `/work-report src/auth/`, `/work-report HEAD~2..HEAD`
+- **Optional step-by-step mode**: include `"walk through one by one"` / `"一步一步讲"` when you explicitly want sequential paging
 
 ## How It Works
 
-`work-report` anchors the target scope, groups changes along architectural boundaries into `N` items tagged `Core` or `Supporting` (scaling depth proportionally with zero boilerplate), and presents **one item per turn** by default—with built-in **fast-forward batching** and **free-jump navigation** whenever you want to speed through supporting items:
-
 ```mermaid
 flowchart LR
-    A["1. Executive Snapshot + Tiered Agenda"] --> B["2. Report Item k (5 elements + trade-offs)"]
-    B --> C{"3. Leader Gate"}
-    C -- "Clear / Next item" --> D{"All N reviewed?"}
-    C -- "Fast-forward: batch remaining" --> D
-    D -- "No" --> B
-    D -- "Yes" --> E["6. Final Summary & Rectification List"]
-    C -- "4a. Interrogate details" --> F["Trace code / call chain & answer with proof"]
-    C -- "4b. Issue directive" --> G["Log into Rectification List without derailing flow"]
-    F --> H{"5. Single-step merged gate"}
-    G --> H
-    H -- "Confirmed -> advance" --> D
-    H -- "Follow-up / adjust" --> C
-    E --> I["7. Execute Rectifications & Sign-Off Table"]
+    A["1. Anchor Scope & Group by Feature"] --> B["2. One-Screen Result-First Summary (Short Filenames + ⚠️ Trade-offs + Real Checks)"]
+    B --> C["3. Zero-Popup Clean Finish"]
+    C -- "Inspect line details" --> D["Reply 'expand #X' / 'show details' -> Clickable file#L links"]
+    C -- "Request a change" --> E["State edit directly -> Immediate fix + targeted check"]
+    C -- "Hunt bugs & regressions" --> F["Run /agent-review"]
 ```
 
-### Each briefing item covers 5 elements (scaled by `Core` vs. `Supporting` tier)
+### What Fits on the Default Screen
 
-1. **Scope & Location** — added, modified, or deleted files and exact symbols with clickable line-range links.
-2. **Core Change & Key Trade-offs** — concise before vs. after comparison explaining *what* changed and *why*, **proactively surfacing architectural trade-offs, implicit assumptions, or shortcut compromises** rather than self-justifying them.
-3. **Call-Chain & Impact** — upstream callers, downstream dependencies, and shared utilities touched, stating *how* they were checked (never a bare `"no impact"`).
-4. **Verification Status** — candid report of checks already executed vs. items marked `Not verified: <reason>` (read-only and low-latency by default).
-5. **Progress & Logged Directives** — `Item k of N` plus the running count of recorded rectification items.
+1. **1–2 Line Headline** — completion status, module/file count, and overall test status.
+2. **Cohesive Change Digest (`#1..#N`)** — grouped by functional boundary with **short filenames** (hiding `#L` line numbers and symbol walls by default), explained in 1–3 plain sentences; supporting wiring/config stays 1 tight line.
+3. **Candid Trade-offs & Assumptions (`⚠️`)** — surfaced only when compromises, hardcoded fallbacks, or implicit assumptions exist (omitted completely when clean).
+4. **Honest Verification Status** — reports observed run results only; marks anything unrun as `Not verified: <reason>`.
+5. **Needs Attention (omitted when clean)** — aggregates all `⚠️` compromises and unverified checks in one quick-scan spot.
 
-### Final Deliverable & Closed-Loop Sign-Off (`《工作汇报总结与整改清单》`)
+### Zero-Popup Closing + Direct Edit Loop
 
-Once all items are reviewed, the agent outputs a complete summary directly in chat:
-
-- **Briefing Overview Table** — tier and final review status of all `N` items (`Approved`, `Approved (Batched)`, `Approved after Q&A`, `Rectification Required`, or `Fixed Inline`).
-- **Interrogation & Verification Minutes** — key questions raised during the walkthrough and verified code conclusions.
-- **Leader Directives & Rectification List (`整改清单`)** — numbered action items with target locations, your directive, and concrete modification plans.
-- **Unverified Items & Residual Risks** — unrun checks, surfaced assumptions, or remaining edge cases.
-- **Tracked Execution & Sign-Off** — prompts whether to execute the Rectification List right away; when approved, applies `#1..#M` in order, runs targeted checks, and replies with a **Rectification Sign-Off Table (`整改核销回执表`)**.
+- **No modal confirmation gates**: finishes cleanly with a 1-line closing hint so you keep full momentum.
+- **Drill down on demand**: reply `"expand #2"` or `"show details"` to surface clickable `file#L` line links and detailed before/after code paths anytime.
+- **Direct follow-up edits**: ask to tweak an item directly in chat and the agent applies the change, runs targeted verification, and replies concisely—zero multi-step list-staging ceremony.
 
 ## Installation
 

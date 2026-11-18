@@ -14,18 +14,19 @@ Built on the open [Agent Skills](https://agentskills.io) standard, this reposito
 
 | Skill | What Problem It Solves | How to Trigger | Docs |
 |-------|------------------------|----------------|------|
-| **[work-report](skills/work-report/README.md)**<br>(工作汇报) | Replaces passive, one-shot summaries after code changes. The agent briefs you **one logical item at a time** like an engineer reporting to a tech lead, answers interrogations with code evidence, logs your directives, and outputs a consolidated Rectification List (`整改清单`). | `/work-report`<br>or natural language: `"walk me through the changes"`, `"brief me on the changes"`, `"work report"`, `"向我汇报"` | [Read Docs →](skills/work-report/README.md) |
-| **[agent-review](skills/agent-review/README.md)**<br>(独立审查) | Goes beyond `git diff` tunnel vision and self-review bias. Delegates **read-only 3D call-graph & full-chain review** to an isolated subagent—catching cross-boundary drift, `"fix A, break B"` regressions, silent fallbacks, and omitted companion files in a `P0/P1/P2` 8-section report. | `/agent-review`<br>or natural language: `"review my changes"`, `"what does this affect"`, `"who calls X"`, `"审查一下"` | [Read Docs →](skills/agent-review/README.md) |
-| **[code-sync](skills/code-sync/README.md)**<br>(代码同步) | Replaces blind `cherry-pick` and mechanical copy-pasting across diverged branches. Interactively anchors **source branch, target branch, and sync scope**, runs a zero-checkout 4-state semantic audit (*Already Synced / Superseded / Missing / Conflict*), gates on a Minimal Sync Plan, and re-adapts to the target's current SSOT. | `/code-sync`<br>or natural language: `"code sync"`, `"sync to branch"`, `"semantic merge"`, `"代码同步"`, `"代码合并"` | [Read Docs →](skills/code-sync/README.md) |
+| **[work-report](skills/work-report/README.md)**<br>(改动交底) | Replaces bloated summaries and multi-turn approval ceremonies. Gives you **one scannable Result-First screen** in plain peer language (with short filenames, `⚠️` trade-offs, and honest test status—no redundant self-reviews or modal popups), expanding `#L` details or applying direct edits on demand. | `/work-report`<br>or natural language: `"walk me through the changes"`, `"brief me on the changes"`, `"work report"`, `"向我汇报"` | [Read Docs →](skills/work-report/README.md) |
+| **[agent-review](skills/agent-review/README.md)**<br>(独立审查) | Goes beyond `git diff` tunnel vision and self-review bias. Delegates code audits to an **isolated subagent** across 3D callers, callees, and shared peers (`"fix A, break B"`), delivering **plain-language `Result-First` findings** by default (3-line `Pass`, clickable `file#L` anchors on defects, 1-click `P0/P1` fix loop, 8-section details on demand) plus fast direct `Mode B` caller lookups. | `/agent-review`<br>or natural language: `"review my changes"`, `"what does this affect"`, `"who calls X"`, `"审查一下"` | [Read Docs →](skills/agent-review/README.md) |
+| **[code-sync](skills/code-sync/README.md)**<br>(代码同步) | Replaces blind `cherry-pick` and noisy parallel-branch merges. Enforces **bidirectional session isolation** (zero bleed from parallel commits), runs a zero-checkout 4-state audit, fast-paths conflict-free adaptations onto target architecture, delivers **Result-First** outcomes with short filenames, and auto-chains `agent-review`. | `/code-sync`<br>or natural language: `"code sync"`, `"sync to branch"`, `"semantic merge"`, `"代码同步"`, `"代码合并"` | [Read Docs →](skills/code-sync/README.md) |
+| **[repo-clean](skills/repo-clean/README.md)**<br>(仓库清理) | Eliminates post-merge and parallel-agent clutter with **minimum cognitive load**. Scans repo + all linked `git worktree` checkouts offline, pre-reads untracked AI plans/stashes/branches against `main`, folds protected assets, and presents a **Result-First** dual-zone cleanup gate with OS Trash + SHA recovery. | `/repo-clean`<br>or natural language: `"repo clean"`, `"clean workspace"`, `"clean worktrees"`, `"清理仓库"`, `"清理工作区"`, `"清理中间产物"` | [Read Docs →](skills/repo-clean/README.md) |
 | **[modern-web-guidance](skills/modern-web-guidance/README.md)**<br>*(Upstream Mirror · Apache-2.0)* | Unmodified mirror of [GoogleChrome/modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance). Steers agents toward modern HTML, CSS, and client-side JS patterns via `npx -y modern-web-guidance@latest`. | Auto-triggered on HTML/CSS/client-side JS tasks | [Read Docs →](skills/modern-web-guidance/README.md) |
 
 ### 💡 Spotlight: `work-report`
 
 After an agent finishes implementing a feature or modifying multiple files, run `/work-report` or say **"walk me through the changes"**:
 
-- **Executive Snapshot & Paced Walkthrough**: Opens with a high-level snapshot and a `Core / Supporting` tiered agenda, presenting **one item at a time** by default—with one-click **fast-forward batching** whenever you want to breeze through supporting items.
-- **5 Evidence Elements + Surfaced Trade-offs**: Every item covers *Scope & Line Links*, *Core Change & Key Trade-offs / Assumptions*, *Upstream/Downstream Call-Chain Impact*, *Honest Verification Status*, and *Progress Tracking*—flagging shortcuts candidly instead of self-rationalizing them.
-- **Underailed Q&A & Closed-Loop Sign-Off**: Interrogate choices for on-the-spot code proof or log directives into a numbered **Rectification List (`整改清单`)** without derailing the review; once complete, execute all approved fixes in order and verify via a **Rectification Sign-Off Table**.
+- **One-Screen Digest, Zero Popups**: Groups changes logically on a single screen with **short filenames** (hiding `#L` walls by default) and finishes cleanly without modal click fatigue—switching to step-by-step paging only when you explicitly ask.
+- **Candid Trade-offs & Clean Boundary**: Explains what changed in plain language, flags shortcuts/assumptions upfront with `⚠️`, and reports real test status—leaving independent regression hunting cleanly to `agent-review`.
+- **On-Demand Drill-Down & Direct Edits**: Reply `"expand #X"` for clickable code line proof, or state adjustments directly in chat to have them applied and verified immediately.
 
 👉 **[Read the full `work-report` guide](skills/work-report/README.md)**
 
@@ -33,21 +34,31 @@ After an agent finishes implementing a feature or modifying multiple files, run 
 
 Before committing, opening a PR, or modifying a shared module, run `/agent-review`:
 
-- **Isolated Subagent + 3D Call-Graph Expansion**: Strips away implementer confirmation bias and expands beyond `git diff` across **upstream callers, downstream dependencies, and lateral shared-component reuse** to hunt down `"fix A, break B"` regressions.
-- **6 Stack-Adaptive Full-Chain Dimensions**: Auto-fingerprints your repository's real architecture (never force-fitting irrelevant layers) to audit **end-to-end closed loops, single-source-of-truth (SSOT) cross-boundary mappings, authz & state transitions, silent fallbacks, and temporary band-aids / duplicate wheels / dead code**.
-- **Structured `P0/P1/P2` 8-Section Engineering Report**: Outputs Review Verdict, Prioritized Findings, Regression Risks & Affected Flows, Blast Radius, Modified Files, **Related Unmodified Files (highlighting suspected omissions)**, Verification Path, and Open Items—stopping cleanly without modifying your files.
+- **Isolated Subagent + Adaptive 3D Tracing**: Code changes always run in a **zero-bias isolated read-only subagent** tracing upstream callers, downstream side effects, and lateral shared peers (`"fix A, break B"`), scaling depth by change risk; pure `"who calls X"` queries answer fast and directly in the current session.
+- **Strict Inside, Plain `Result-First` Outside**: Audits closed loops, cross-boundary contracts, authz/state safety, silent fallbacks, and band-aids internally—while delivering a 3-line `Pass` when clean, or plain-language `P0/P1/P2` defects with clickable `file#L` anchors (with full 8-section inventories available on `"show details"`).
+- **1-Click `P0/P1` Closure + Caller Isolation**: Stops with zero popups on `Pass` or `P2`-only runs, and pops a single fix-and-reverify card when `P0`/`P1` blockers appear. Also supports `Target Workspace`, `Locked Change Scope`, and `Result-First (Chained)` for [`code-sync`](skills/code-sync/README.md).
 
 👉 **[Read the full `agent-review` guide](skills/agent-review/README.md)**
 
 ### 🔀 Spotlight: `code-sync`
 
-When porting a fix or feature from your current session, dirty workspace, or feature/hotfix branch into a refactored target branch (like `main`), run `/code-sync`:
+When porting a fix or feature from your current session, dirty workspace, or feature/hotfix branch into a refactored or busy target branch (like `main`), run `/code-sync`:
 
-- **Smart Sensing + On-Demand 3-Input Card**: Probes your current branch, dirty files, mounted `git worktree` paths, and cached `origin/*` refs automatically—prompting only for missing inputs across **Session Changes, Workspace Uncommitted Changes, Source Branch Commits, or Specific Commits/Paths**.
-- **Zero-Checkout 4-State Semantic Audit**: Inspects the target branch strictly read-only without switching branches, classifying each logical unit as **Already Synced, Superseded by Refactor, Missing/Regressed, or Semantic Conflict**, and drafting a target-native **Minimal Sync Plan (`最小改动清单`)** aligned with current SSOT and 3D call chains.
-- **Single-Step Merged Gate + Safe Worktree/Stash Landing**: Consolidates plan approval, conflict choices, and cross-branch landing mode (recommending an isolated temporary `git worktree` when your source tree has uncommitted edits) into a single confirmation turn, closing with targeted verification and a **Sync Sign-Off Table (`同步核销回执表`)**.
+- **Strict Bidirectional Parallel Isolation**: Locks strictly to the requested scope (e.g., **Session Changes only**—silently ignoring other commits or dirty files on the same branch) and reads only the **current target snapshot** without scanning unrelated parallel commit history on `main` unless a direct conflict occurs.
+- **Smart Fast-Path + Safe Worktree Landing**: Skips redundant pre-execution checklist popups when conflict-free—adapting straight to target architecture (using a sibling `git worktree` when needed without touching your source tree or running unprompted `git stash`), pausing only on genuine conflicts, parallel dirty clashes, or stale local target refs.
+- **Transparent Outcomes + Auto `agent-review`**: Presents clean functional outcomes alongside **short target filenames** (hiding `#L` line dumps until `"show details"`, and explaining skipped temp-worktree tests in 1 plain sentence with the command to re-run on `<target>`), chains isolated `agent-review`, and finishes cleanly with zero popups when clean—or defaults `(Recommended)` to committing and auto-cleaning temporary worktrees on `Pass`.
 
 👉 **[Read the full `code-sync` guide](skills/code-sync/README.md)**
+
+### 🧹 Spotlight: `repo-clean`
+
+After merging remote branches or finishing parallel multi-agent tasks, run `/repo-clean` or say **"clean workspace"**:
+
+- **Repo-Centric Scan + AI Pre-Digestion**: Audits the active repo and all linked `git worktree list` checkouts offline—detecting squash-merged / `code-sync` branches (`git cherry` + semantic checks), applied stashes, and untracked `PLAN*`/`ANALYSIS*` docs whose changes already landed in `main`.
+- **5-Second Result-First Dual-Zone Gate**: Auto-folds protected assets (`main`, tracked docs, `CLAUDE.md`/`AGENTS.md`), lists settled `🟢` cleanups compactly, and writes a **1-line plain-language summary + `Keep / Delete` lean** for any remaining `🟡` items.
+- **Dependency-Safe Recoverable Execution**: Removes worktrees before their branches, drops stashes in descending index order, sends untracked plan docs to **OS Trash**, and prints **recovery Commit SHAs** for deleted branches and stashes without running destructive `git gc`.
+
+👉 **[Read the full `repo-clean` guide](skills/repo-clean/README.md)**
 
 ### 🌐 Mirrored Upstream Skill: `modern-web-guidance` (Third-Party)
 
@@ -68,7 +79,7 @@ Each skill is a self-contained directory with a `SKILL.md` file, compatible with
 ### Option 1: Install via `npx skills`
 
 ```bash
-# Install all bundled skills (work-report, agent-review, code-sync, modern-web-guidance) in one command
+# Install all bundled skills (work-report, agent-review, code-sync, repo-clean, modern-web-guidance) in one command
 npx skills add lastxuanain/ainward-skills
 
 # Pull updates later
@@ -82,7 +93,7 @@ npx skills update
 git clone https://github.com/lastxuanain/ainward-skills.git ~/ainward-skills
 ```
 
-Then symlink the skills you want (`work-report`, `agent-review`, `code-sync`, `modern-web-guidance`) into your agent's skills directory:
+Then symlink the skills you want (`work-report`, `agent-review`, `code-sync`, `repo-clean`, `modern-web-guidance`) into your agent's skills directory:
 
 ```bash
 # Antigravity
@@ -90,6 +101,7 @@ mkdir -p ~/.gemini/config/skills
 ln -s ~/ainward-skills/skills/work-report ~/.gemini/config/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.gemini/config/skills/agent-review
 ln -s ~/ainward-skills/skills/code-sync ~/.gemini/config/skills/code-sync
+ln -s ~/ainward-skills/skills/repo-clean ~/.gemini/config/skills/repo-clean
 ln -s ~/ainward-skills/skills/modern-web-guidance ~/.gemini/config/skills/modern-web-guidance
 
 # Claude Code
@@ -97,6 +109,7 @@ mkdir -p ~/.claude/skills
 ln -s ~/ainward-skills/skills/work-report ~/.claude/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.claude/skills/agent-review
 ln -s ~/ainward-skills/skills/code-sync ~/.claude/skills/code-sync
+ln -s ~/ainward-skills/skills/repo-clean ~/.claude/skills/repo-clean
 ln -s ~/ainward-skills/skills/modern-web-guidance ~/.claude/skills/modern-web-guidance
 
 # Codex
@@ -104,6 +117,7 @@ mkdir -p ~/.codex/skills
 ln -s ~/ainward-skills/skills/work-report ~/.codex/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.codex/skills/agent-review
 ln -s ~/ainward-skills/skills/code-sync ~/.codex/skills/code-sync
+ln -s ~/ainward-skills/skills/repo-clean ~/.codex/skills/repo-clean
 ln -s ~/ainward-skills/skills/modern-web-guidance ~/.codex/skills/modern-web-guidance
 
 # Cursor
@@ -111,10 +125,11 @@ mkdir -p ~/.cursor/skills
 ln -s ~/ainward-skills/skills/work-report ~/.cursor/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.cursor/skills/agent-review
 ln -s ~/ainward-skills/skills/code-sync ~/.cursor/skills/code-sync
+ln -s ~/ainward-skills/skills/repo-clean ~/.cursor/skills/repo-clean
 ln -s ~/ainward-skills/skills/modern-web-guidance ~/.cursor/skills/modern-web-guidance
 ```
 
-> **Tip**: Once installed, trigger first-party skills directly in chat using slash commands (`/work-report`, `/agent-review`, `/code-sync`) or natural language prompts (`"walk me through the changes"`, `"review my changes"`, `"sync changes to main"`). `modern-web-guidance` triggers automatically on HTML/CSS/client-side JS tasks.
+> **Tip**: Once installed, trigger first-party skills directly in chat using slash commands (`/work-report`, `/agent-review`, `/code-sync`, `/repo-clean`) or natural language prompts (`"walk me through the changes"`, `"review my changes"`, `"sync changes to main"`, `"clean workspace"`). `modern-web-guidance` triggers automatically on HTML/CSS/client-side JS tasks.
 >
 > **Tip (Antigravity Plugin users)**: If you already installed Google's official *Modern Web Guidance* plugin from the Antigravity Marketplace, skip symlinking `skills/modern-web-guidance` into `~/.gemini/config/skills/` to avoid loading the same skill twice.
 
@@ -153,5 +168,5 @@ ainward-skills/
 
 ## License
 
-- **[MIT](LICENSE)** — applies to original `ainward-skills` workflows (`work-report`, `agent-review`, `code-sync`) and repository files.
+- **[MIT](LICENSE)** — applies to original `ainward-skills` workflows (`work-report`, `agent-review`, `code-sync`, `repo-clean`) and repository files.
 - **Third-Party Upstream Mirror (`skills/modern-web-guidance/`)** — mirrored unmodified from [GoogleChrome/modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance) (unaffiliated with `ainward-skills`) and governed by its upstream **[Apache-2.0 License](skills/modern-web-guidance/LICENSE)** (code) and **[CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/)** (upstream `guides/` documentation, with portions derived from MDN Web Docs, W3C, WHATWG, and IETF). See [skills/modern-web-guidance/README.md](skills/modern-web-guidance/README.md) for full attribution and `DISABLE_TELEMETRY=1` opt-out instructions.
