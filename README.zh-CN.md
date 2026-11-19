@@ -14,11 +14,22 @@
 
 | Skill | 解决什么问题 | 触发方式 | 详细文档 |
 |-------|--------------|----------|----------|
+| **[plan-review](skills/plan-review/README.zh-CN.md)**<br>（方案评审） | 告别模糊需求盲写、细枝末节盘问与 AI 盲从谄媚。动笔前**先查真实代码库纠偏并主动补盲区**，敢对缺陷与过度设计直言指错，只以推荐点选卡对齐高杠杆大方向（默认 1 题/轮，实施细节由 AI 扛下），最终在对话内输出可落地的 **Result-First 具体实施方案**并经单步拍板后再写代码。 | `/plan-review`<br>或自然语言：`方案评审`、`需求纠偏`、`对齐需求`、`梳理方案`、`grill-me` | [查看文档 →](skills/plan-review/README.zh-CN.md) |
 | **[work-report](skills/work-report/README.zh-CN.md)**<br>（改动交底） | 告别改完代码后的敷衍流水账与多轮弹窗过堂。用平级大白话**一屏呈报改动与短文件名**，主动坦白`⚠️`妥协与未验证项（不掺入有偏见的自我调用链审查），零弹窗收工并支持按需展开行号或直接修改。 | `/work-report`<br>或自然语言：`向我汇报`、`汇报一下这次改动`、`复盘一下代码` | [查看文档 →](skills/work-report/README.zh-CN.md) |
 | **[agent-review](skills/agent-review/README.zh-CN.md)**<br>（独立审查） | 跳出局部 `git diff` 与“自己审自己”偏见。派发**独立只读子 Agent** 沿上游、下游与横向复用链展开全链路审查（支持按改动性质自适应裁剪、纯查“谁调用了 X”秒回），默认输出人话 `Result-First` 结论与短文件行号锚点，发现 `P0/P1` 自动提供一键修复闭环，完整 8 板块按需展开。 | `/agent-review`<br>或自然语言：`审查一下`、`帮我看看这次改动`、`改动会影响什么`、`谁调用了 X` | [查看文档 →](skills/agent-review/README.zh-CN.md) |
 | **[code-sync](skills/code-sync/README.zh-CN.md)**<br>（代码同步） | 拒绝无脑 `cherry-pick` 与并行分支串线。严格锁定指令范围实现**双向对话隔离**，只读目标分支最新快照做四象限审计，无冲突时直通按目标最新架构重适配与靶向验证，**Result-First** 呈报效果与短文件名，并自动触发 `agent-review`。 | `/code-sync`<br>或自然语言：`代码同步`、`代码合并`、`同步到分支`、`合并到分支` | [查看文档 →](skills/code-sync/README.zh-CN.md) |
 | **[repo-clean](skills/repo-clean/README.zh-CN.md)**<br>（仓库清理） | 专为合并后与多并发开发打造的**低心智负担清理流**。只读快扫仓库与全量关联 `worktree`，后台替读推演文档、Stash 与未合入分支比对是否已落地，自动折叠保护项，输出 **Result-First 双区拍板清单** 并支持回收站与 SHA 后悔药。 | `/repo-clean`<br>或自然语言：`清理仓库`、`清理工作区`、`清理 worktree`、`清理中间产物` | [查看文档 →](skills/repo-clean/README.zh-CN.md) |
-| **[modern-web-guidance](skills/modern-web-guidance/README.zh-CN.md)**<br>（上游镜像 · Apache-2.0） | 原样镜像自 [GoogleChrome/modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance)。在前端任务中通过 `npx -y modern-web-guidance@latest` 引导 Agent 采用现代 HTML / CSS / 客户端 JS 最佳实践。 | 涉及 HTML / CSS / 客户端 JS 任务时自动触发 | [查看文档 →](skills/modern-web-guidance/README.zh-CN.md) |
+| **[frontend-craft](skills/frontend-craft/README.zh-CN.md)**<br>（前端规范） | **100% 纯离线自包含**的前端视觉、跨页一致性与架构规范。强制**存量侦察锁**（先对齐原仓库 Token、布局壳、公共组件与标杆兄弟页），支持 B2B/SaaS/品牌多形态自适应，锁死三级 Token 与唯一表格/弹窗契约，根除 AI 廉价塑料感，落地五态必全、组件状态四分法、中文输入法防误触与现代原生 HTML/CSS 基线。 | 前端/UI 任务自动触发<br>或 `/frontend-craft`、`前端规范`、`UI 规范`、`去 AI 味` | [查看文档 →](skills/frontend-craft/README.zh-CN.md) |
+
+### 🧭 `plan-review`（编码前方案评审与需求纠偏）核心亮点
+
+动笔写代码前，遇到需求模糊或想验证一个技术方向是否靠谱时，输入 `/plan-review` 或说 **「方案评审 / 需求纠偏」**：
+
+- **先查代码库现实，敢纠偏、补盲区**：提问前先只读核查真实代码、现有抽象与仓库规则（能查代码库搞清的绝不问你）；主动挖掘漏掉的边界条件、上下游依赖与隐性风险；面对缺陷或过度设计直接按「错在哪 → 后果 → 替代方案」直言指错，绝不谄媚盲从。
+- **人抓大方向，AI 扛实施细节**：沿设计树按依赖顺序只问高杠杆大方向（默认 **1 题/轮** + `(Recommended)` 推荐选项，极轻独立取舍才合并 2–3 题，随时可说「直接出方案」收敛）；函数命名、局部拆分等细节由 AI 按仓库惯例自主拍板。
+- **对话内输出具体实施方案 + 单步拍板**：对齐后直接在对话内输出结构化 **Result-First 实施方案**（含目标边界、已拍板方向、纠偏与盲区记录、AI 实施细节、步骤与验收，不擅自落盘污染仓库），末尾 1 张确认卡拍板后才开始写代码（主动避开 Antigravity 内置 `/grill-me` 冲突）。
+
+👉 **[阅读 `plan-review` 完整工作流与使用说明](skills/plan-review/README.zh-CN.md)**
 
 ### 💡 `work-report`（改动交底与走读）核心亮点
 
@@ -60,15 +71,15 @@
 
 👉 **[阅读 `repo-clean` 完整工作流与使用说明](skills/repo-clean/README.zh-CN.md)**
 
-### 🌐 同步收录的第三方 Skill：`modern-web-guidance`
+### 🎨 `frontend-craft`（前端视觉体系、跨页一致性与工程架构规范）核心亮点
 
-直接内置于仓库中，安装 `ainward-skills` 即可一站式获得现代 Web 开发规范指引：
+新建、修改或重构前端页面与组件时自动生效，也可直接输入 `/frontend-craft` 或说 **「前端规范 / 去 AI 味」**：
 
-- **上游原样镜像**：原样同步自 [`GoogleChrome/modern-web-guidance`](https://github.com/GoogleChrome/modern-web-guidance)（仅包含 `SKILL.md` 与上游 `LICENSE`；由于 `SKILL.md` 运行时会通过 `npx -y modern-web-guidance@latest` 动态拉取最新指南，故意排除了 250+ 篇 `guides/` 文档以保持仓库轻量）。
-- **自动巡检提 PR**：由 [`.github/workflows/sync-modern-web-guidance.yml`](.github/workflows/sync-modern-web-guidance.yml) 每日检查上游变更并自动创建 PR，人工确认后合入。
-- **独立协议与遥测**：独立于本仓库的 MIT 协议，沿用上游 **Apache-2.0 / CC-BY 4.0** 协议（与谷歌无隶属关系）；如需关闭其 CLI 匿名遥测，可设置 `export DISABLE_TELEMETRY=1`。
+- **存量侦察锁 + 多产品形态自适应**：动笔前强制只读侦察现有主题 Token、全局布局壳、公共组件库与 1 个标杆兄弟页（优先扩展公共层而非单页写散装特例）；自动区分 **B2B 高密度台账 / 交互式 SaaS 工作台 / 品牌落地页与 C 端**，拒绝生搬硬套。
+- **专治「散装缝合怪」与「AI 塑料感」**：锁死 `Primitive → Semantic → Component` 三级变量与 `@layer`、四大标准页面骨架与唯一 `DataTable` 契约（空值 `—`、数值时间右对齐 + `tabular-nums`、固定操作列超 3 个收纳进 `⋯`），硬性拦截默认蓝紫霓虹渐变、发光卡片堆砌、胶囊徽章泛滥与 Emoji 充当图标。
+- **五态必全、架构边界与离线原生基线**：通过 `references/01..05` 渐进式按需加载——强制覆盖 `Loading / Empty / Error / Overflow / Pending` 五态、失焦延迟报错、中文输入法 `!event.isComposing` 回车防误提交、React/Vue/Svelte 三层边界与状态四分法，以及 `<dialog>` / `popover` / `@container` / `100dvh` / `:has()` / `color-mix()` 现代原生基线（与官方原生 Web API 插件错位互补共存）。
 
-👉 **[阅读 `modern-web-guidance` 版权归属与遥测说明](skills/modern-web-guidance/README.zh-CN.md)**
+👉 **[阅读 `frontend-craft` 完整规范与模块说明](skills/frontend-craft/README.zh-CN.md)**
 
 ---
 
@@ -79,7 +90,7 @@
 ### 方式一：使用 `npx skills` 一键安装
 
 ```bash
-# 一条命令安装全部内置 Skills（work-report、agent-review、code-sync、repo-clean、modern-web-guidance）
+# 一条命令安装全部内置 Skills（plan-review、work-report、agent-review、code-sync、repo-clean、frontend-craft）
 npx skills add lastxuanain/ainward-skills
 
 # 后续同步远端更新
@@ -91,47 +102,52 @@ npx skills update
 ```bash
 # 1. 克隆仓库到本地
 git clone https://github.com/lastxuanain/ainward-skills.git ~/ainward-skills
+
+# 2. 一键同步软链接到本机已安装的各 Agent 工具（Antigravity / Claude Code / Codex / OpenCode / Cursor）
+~/ainward-skills/scripts/link.sh
 ```
 
-然后将需要的 Skill（`work-report`、`agent-review`、`code-sync`、`repo-clean`、`modern-web-guidance`）软链接到你所使用的 Agent 技能目录：
+也可以手动将需要的 Skill（`plan-review`、`work-report`、`agent-review`、`code-sync`、`repo-clean`、`frontend-craft`）软链接到对应的 Agent 技能目录：
 
 ```bash
 # Antigravity
 mkdir -p ~/.gemini/config/skills
+ln -s ~/ainward-skills/skills/plan-review ~/.gemini/config/skills/plan-review
 ln -s ~/ainward-skills/skills/work-report ~/.gemini/config/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.gemini/config/skills/agent-review
 ln -s ~/ainward-skills/skills/code-sync ~/.gemini/config/skills/code-sync
 ln -s ~/ainward-skills/skills/repo-clean ~/.gemini/config/skills/repo-clean
-ln -s ~/ainward-skills/skills/modern-web-guidance ~/.gemini/config/skills/modern-web-guidance
+ln -s ~/ainward-skills/skills/frontend-craft ~/.gemini/config/skills/frontend-craft
 
 # Claude Code
 mkdir -p ~/.claude/skills
+ln -s ~/ainward-skills/skills/plan-review ~/.claude/skills/plan-review
 ln -s ~/ainward-skills/skills/work-report ~/.claude/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.claude/skills/agent-review
 ln -s ~/ainward-skills/skills/code-sync ~/.claude/skills/code-sync
 ln -s ~/ainward-skills/skills/repo-clean ~/.claude/skills/repo-clean
-ln -s ~/ainward-skills/skills/modern-web-guidance ~/.claude/skills/modern-web-guidance
+ln -s ~/ainward-skills/skills/frontend-craft ~/.claude/skills/frontend-craft
 
 # Codex
 mkdir -p ~/.codex/skills
+ln -s ~/ainward-skills/skills/plan-review ~/.codex/skills/plan-review
 ln -s ~/ainward-skills/skills/work-report ~/.codex/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.codex/skills/agent-review
 ln -s ~/ainward-skills/skills/code-sync ~/.codex/skills/code-sync
 ln -s ~/ainward-skills/skills/repo-clean ~/.codex/skills/repo-clean
-ln -s ~/ainward-skills/skills/modern-web-guidance ~/.codex/skills/modern-web-guidance
+ln -s ~/ainward-skills/skills/frontend-craft ~/.codex/skills/frontend-craft
 
 # Cursor
 mkdir -p ~/.cursor/skills
+ln -s ~/ainward-skills/skills/plan-review ~/.cursor/skills/plan-review
 ln -s ~/ainward-skills/skills/work-report ~/.cursor/skills/work-report
 ln -s ~/ainward-skills/skills/agent-review ~/.cursor/skills/agent-review
 ln -s ~/ainward-skills/skills/code-sync ~/.cursor/skills/code-sync
 ln -s ~/ainward-skills/skills/repo-clean ~/.cursor/skills/repo-clean
-ln -s ~/ainward-skills/skills/modern-web-guidance ~/.cursor/skills/modern-web-guidance
+ln -s ~/ainward-skills/skills/frontend-craft ~/.cursor/skills/frontend-craft
 ```
 
-> **提示**：安装完成后，原创工作流可在对话中输入斜杠命令（`/work-report`、`/agent-review`、`/code-sync`、`/repo-clean`）或自然语言口令（「向我汇报这次改动」「审查一下这次改动」「把改动同步到 main」「清理工作区」）触发；`modern-web-guidance` 则会在处理 HTML / CSS / 客户端 JS 任务时自动触发。
->
-> **提示（Antigravity 插件用户）**：如果你已通过 Antigravity 插件市场安装了官方 *Modern Web Guidance* 插件，可跳过将 `skills/modern-web-guidance` 软链接到 `~/.gemini/config/skills/`，避免同一技能被重复加载。
+> **提示**：安装完成后，可在对话中输入斜杠命令（`/plan-review`、`/work-report`、`/agent-review`、`/code-sync`、`/repo-clean`、`/frontend-craft`）或自然语言口令触发；`frontend-craft` 同时会在处理前端 UI 页面与组件任务时自动生效，且与官方 *Modern Web Guidance* 等浏览器原生 API 检索插件无重名冲突、互补共存。
 
 ---
 
@@ -152,21 +168,16 @@ ln -s ~/ainward-skills/skills/modern-web-guidance ~/.cursor/skills/modern-web-gu
 
 ```text
 ainward-skills/
-├── .github/workflows/
-│   └── sync-modern-web-guidance.yml  # 每日自动检查上游并提 PR
+├── scripts/
+│   └── link.sh                       # 本机多 Agent 软链接批量同步脚本
 └── skills/
-    ├── <first-party-skill>/
-    │   ├── SKILL.md                  # 给 Agent 读取的核心指令
-    │   ├── README.md                 # 英文使用说明
-    │   └── README.zh-CN.md           # 中文使用说明
-    └── modern-web-guidance/          # 上游原样镜像收录
-        ├── LICENSE                   # 上游 Apache-2.0 许可证
-        ├── SKILL.md                  # 同步自 GoogleChrome/modern-web-guidance
-        ├── README.md                 # 版权归属与遥测说明（英文）
-        └── README.zh-CN.md           # 版权归属与遥测说明（中文）
+    └── <skill-name>/
+        ├── SKILL.md                  # 给 Agent 读取的核心指令与按需路由
+        ├── references/               # 可选：渐进式加载的模块化规范细则
+        ├── README.md                 # 英文使用说明
+        └── README.zh-CN.md           # 中文使用说明
 ```
 
 ## 许可证
 
-- **[MIT](LICENSE)**：适用于本仓库原创工作流 Skills（`work-report`、`agent-review`、`code-sync`、`repo-clean`）及相关仓库文件。
-- **第三方上游镜像（`skills/modern-web-guidance/`）**：原样同步自 [GoogleChrome/modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance)（与本仓库无隶属关系），独立适用上游 **[Apache-2.0 许可证](skills/modern-web-guidance/LICENSE)**（代码）与 **[CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/)**（上游 `guides/` 文档内容，部分衍生自 MDN Web Docs、W3C、WHATWG 与 IETF 规范）。完整归属声明及 `DISABLE_TELEMETRY=1` 遥测退出方式请参见 [skills/modern-web-guidance/README.zh-CN.md](skills/modern-web-guidance/README.zh-CN.md)。
+本项目遵循 **[MIT 许可证](LICENSE)** 开源发布。
