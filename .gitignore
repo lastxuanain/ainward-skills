@@ -8,6 +8,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+.link.local
 
 # Logs
 *.log
