@@ -1,87 +1,41 @@
-# code-sync (语义化代码同步与跨分支合并)
+# code-sync (Semantic Cross-Branch Code Porting)
 
 English | [简体中文](README.zh-CN.md)
 
-> Interactive, intent-driven cross-branch code synchronization and semantic porting with **strict parallel-conversation isolation**, **Smart Fast-Path execution**, **Result-First reporting**, and **automatic post-merge `agent-review`**: locks strictly to your requested scope (e.g., current conversation edits only—ignoring unrelated parallel commits), inspects the target branch snapshot read-only without scanning unrelated commit history, re-adapts idiomatically to target SSOT, runs targeted verification, and automatically chains an isolated Result-First [`agent-review`](../agent-review/README.md) on the merged changes.
-
-## The Problem
-
-When porting hotfixes, features, or in-progress edits from one branch or parallel session onto a busy target branch (like `main`), raw Git commands and naive AI prompts routinely fail in four ways:
-
-- **Blind `cherry-pick` & legacy copy-pasting**: When the target branch has refactored directories or migrated its Single Source of Truth (SSOT), replaying old hunks either triggers messy conflicts or reintroduces obsolete abstractions;
-- **Parallel-session scope bleed**: When multiple tasks or conversations run concurrently on the same repo or `main` branch, naive prompts sweep other sessions' commits or unrelated dirty files into analysis and review;
-- **Noisy line-number & symbol dumps**: Dumping dozens of `#L` line links, class names, and pre-execution boilerplate tables buries the actual outcome you care about;
-- **Clobbered working trees & unreviewed merges**: Running unprompted `git checkout` or `git stash` disrupts parallel work, while landing adapted changes without an independent 3D regression check risks `"fix A, break B"` regressions.
-
-`code-sync` turns cross-branch merging into a **parallel-safe, result-first semantic adaptation + independent review loop**.
+> Port bug fixes, features, or refactors across branches **by engineering intent rather than blind patch replay**, with **bidirectional parallel-session isolation** and **conflict-free fast-path execution**: locks strictly to your requested scope, audits the target snapshot read-only (auto-aligning lagging `origin/<target>` refs without popup stalls), adapts idiomatically to target architecture, runs targeted checks, and delivers proportional bullets with clickable file-line links (never hijacking plain `git merge / pull / push`).
 
 ## Quick Trigger
 
-Invoke the skill in chat whenever you need to sync or port changes to another branch:
-
-- **Interactive launch (auto-detects context & prompts only for missing inputs)**: `/code-sync`, `"code sync"`, `"sync to branch"`, `"semantic merge"`, `"代码同步"`, `"代码合并"`
-- **Parameterized launch (adopts stated inputs automatically; skips Gate 1 when complete)**:
-  - `/code-sync sync changes from this conversation to main`
-  - `/code-sync port uncommitted workspace changes to release/v2`
+- **Interactive launch (prompts only for missing inputs)**: `/code-sync`, `"code sync"`, `"sync to branch"`, `"port changes to"`, `"semantic merge"`, `"代码同步"`, `"同步到分支"`, `"把改动同步到"`
+- **Parameterized launch (zero popups when inputs are clear and conflict-free)**:
+  - `/code-sync port changes from this conversation to main`
+  - `/code-sync sync uncommitted workspace edits to release/v2`
   - `/code-sync from fix/order-timeout to main`
 
 ## How It Works
 
 ```mermaid
 flowchart LR
-    A["1. Fast Git Sensing + Strict Scope Lock"] --> B["2. Target Snapshot Audit (Zero Parallel Log Scan)"]
-    B --> C{"3. Smart Routing"}
-    C -- "Zero edits needed" --> Z["Result-First Summary (Clean Exit)"]
-    C -- "Conflict / Lag / Target Dirty Clash" --> D["Single Conflict/Alignment Gate"]
-    C -- "Conflict-Free (Smart Fast-Path)" --> E["4. Isolated Target Adaptation + Targeted Checks"]
+    A["1. Offline Sensing + Hard Scope Lock"] --> B["2. Target Snapshot 3-State Audit"]
+    B --> C{"3. Conflict Routing"}
+    C -- "Already Covered" --> Z["Concise Exit (Zero Popups)"]
+    C -- "True Conflict / Divergence" --> D["Single Decision Card"]
+    C -- "Conflict-Free Fast-Path" --> E["4. Isolated Adaptation + Targeted Checks"]
     D --> E
-    E --> F["5. Auto Post-Merge agent-review (Locked Target Scope)"]
-    F --> G["6. Unified Result-First Delivery + Conditional Closing Gate"]
+    E --> F["5. Proportional Summary + Clickable File Links"]
 ```
 
-### 1. Strict Bidirectional Parallel Isolation
-
-- **Source-side hard lock**: When you ask to sync **Session Changes (`本次对话的改动`)** (or specific commits/files), `code-sync` treats that scope as a strict allowlist—extracting **only** edits and commits authored in the current conversation. Other commits on the branch and unrelated dirty workspace files are silently ignored (and if no edits occurred in the conversation, it prompts cleanly instead of silently scanning branch history).
-- **Target-side snapshot isolation**: Reads **only** the current snapshot of target files and direct 3D callers/peers relevant to the synced units—never browsing unrelated parallel commits on `main` unless a direct line-level or contract conflict occurs, and never touching unrelated dirty files on target.
-
-### 2. Smart Fast-Path & Safe Isolated Landing
-
-- **Zero redundant popups when clean**: When parameters are clear, zero semantic/dirty conflicts exist, local `<target>` does not lag `origin/<target>`, and landing is non-destructive, `code-sync` skips the pre-execution checklist gate and runs straight through adaptation, targeted verification, and post-merge review.
-- **Pauses only when judgment is needed**: Surfaces a concise plain-language summary and **one** merged gate only when there is a semantic conflict, same-file parallel dirty clash on target, local `<target>` lagging cached `origin/<target>`, or an explicit workspace decision.
-- **Non-disruptive landing**: Edits only the synced files when already on `<target>` or a clean mounted `<target>` worktree; automatically creates an isolated sibling `git worktree` when `<target>` is unmounted, never running `git stash` or switching a dirty source branch unprompted.
-
-### 3. Result-First Output & Automatic Post-Merge `agent-review`
-
-- **Outcomes + short filenames first, details on demand**: Hides `#L` line numbers, class/symbol walls, and audit jargon by default—presenting clean functional outcomes alongside **short target filenames** (`synced / skipped / touched files / verified / review verdict`). When checks skip inside a newly created temporary worktree due to missing local dependencies, states why in 1 plain sentence with the exact command to run back on `<target>`. Reply `"show details"` (`"展开细节"`) anytime for clickable line links and full call-chain proof.
-- **Seamless `agent-review` handoff**: Whenever target files are modified, `code-sync` automatically invokes [`agent-review`](../agent-review/README.md) with a locked `Target Workspace` path, `Locked Change Scope` (only the synced changes—no source or parallel-task bleed), verbatim requirement context (zero self-justification bias), and `Result-First (Chained)` output profile.
-- **Clean closing**: Stops with zero popups when `Pass` and no temporary `worktree`/`stash` was created; otherwise opens a single closing gate (defaulting `(Recommended)` to committing on `<target>` and auto-cleaning the temporary worktree whenever review passes without `P0`/`P1` blockers).
+- **Strict bidirectional isolation**: Session-scoped syncs extract **only** edits/commits authored in the current conversation (stopping cleanly if zero edits exist instead of scanning `target..source`); target inspection reads only the latest snapshot and direct callers/peers without browsing unrelated parallel commit logs or touching unrelated dirty files.
+- **Auto-alignment & safe worktree landing**: Automatically bases on `origin/<target>` when local `<target>` has `0 ahead, K behind` commits; creates an isolated sibling `git worktree` when `<target>` is unmounted so your source workspace stays untouched without unprompted `git stash` (offering 1-click commit + worktree cleanup at completion).
+- **Proportional, clickable delivery**: Scales output length to change size with compact clickable `[file.ts](file:///...#L...)` links and honest check outcomes—suggesting [`/agent-review`](../agent-review/README.md) in 1 line only when non-trivial semantic rewrites or skipped temp-worktree checks warrant independent verification.
 
 ## Installation
 
-### Option 1: Install via `npx skills`
-
 ```bash
+# Option 1: Install via npx skills
 npx skills add lastxuanain/ainward-skills
-```
 
-### Option 2: Git Clone + Symlink
-
-```bash
+# Option 2: Clone + symlink via scripts/link.sh (see root README for all flags)
 git clone https://github.com/lastxuanain/ainward-skills.git ~/ainward-skills
-
-# Antigravity
-mkdir -p ~/.gemini/config/skills
-ln -s ~/ainward-skills/skills/code-sync ~/.gemini/config/skills/code-sync
-
-# Claude Code
-mkdir -p ~/.claude/skills
-ln -s ~/ainward-skills/skills/code-sync ~/.claude/skills/code-sync
-
-# Codex
-mkdir -p ~/.codex/skills
-ln -s ~/ainward-skills/skills/code-sync ~/.codex/skills/code-sync
-
-# Cursor
-mkdir -p ~/.cursor/skills
-ln -s ~/ainward-skills/skills/code-sync ~/.cursor/skills/code-sync
+~/ainward-skills/scripts/link.sh --skills code-sync
 ```
