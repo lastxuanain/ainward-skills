@@ -1,281 +1,154 @@
 ---
 name: plan-review
 description: >-
-  Explicit pre-implementation plan review, requirement alignment, and
-  codebase-grounded course correction with low cognitive load. Inspects the
-  actual codebase first to verify reality, proactively hunts blind spots and
-  edge cases, pushes back candidly against flawed or over-engineered directions
-  (anti-sycophancy), interviews the user only on high-leverage directional
-  decisions (1 question per round by default with recommended options, letting
-  the agent own low-level implementation details), and delivers a Result-First
-  concrete implementation plan in chat behind a single-step sign-off gate.
+  Proposal-first, ultra-low-cognitive-load pre-implementation alignment,
+  plain-language intent playback (in-your-own-words), and codebase-grounded
+  course correction. Reads the real codebase first, restates the underlying
+  problem and desired outcome in plain words (penetrating XY problems without
+  parroting), pushes back candidly on flawed or over-engineered premises, owns
+  secondary trade-offs autonomously instead of running multi-round questionnaire
+  interrogations, and converges in 1 turn by default (asking at most 1–2 true
+  blocking forks when genuinely split) before touching code.
   Triggers: /plan-review, "plan review", "review my plan", "align requirements",
+  "restate requirements", "in-your-own-words", "in your own words",
   "stress-test my plan", "spec check", "grill-me", "grill me", "方案评审",
-  "需求纠偏", "对齐需求", "梳理方案", "补全需求", "拷问方案", "评审一下方案".
+  "需求纠偏", "对齐需求", "复述需求", "理清需求", "梳理方案", "补全需求",
+  "拷问方案", "评审一下方案".
 license: MIT
 compatibility: >-
-  Works best with a structured question tool (e.g. ask_question, AskUserQuestion)
-  and read-only file/search/git tools (plus optional read-only subagent for
-  broad cross-module exploration); falls back gracefully to numbered plain-text
-  questions with recommended answers when structured prompts are unavailable.
+  Works on any coding agent with read-only file/search/git tools; uses native
+  structured question cards (e.g. ask_question, AskUserQuestion) when available
+  and degrades cleanly to concise numbered options in plain text.
 metadata:
   author: Ainward
-  version: "1.0.0"
+  version: "2.0.0"
   status: experimental
-  category: "plan-review, requirement-alignment, design-critique, software-engineering"
+  category: "plan-review, requirement-alignment, intent-playback, software-engineering"
   verified-agents: "antigravity"
 ---
 
-# Plan Review (编码前方案评审与需求纠偏)
+# Plan Review (编码前本意对焦与极简方案纠偏)
 
-Turn a **vague idea** or a **proposed plan** into an execution-ready,
-codebase-grounded implementation plan **with minimum cognitive load**—putting
-the human strictly in charge of high-level direction while the agent inspects
-reality, fills blind spots, pushes back on flawed paths, and owns routine
-implementation details.
+Align on **the real problem and the smallest sound approach** before writing
+code—acting as a high-judgment peer engineer who checks codebase reality first,
+exposes misreadings in plain words, and puts a concrete recommended proposal on
+the table in **one turn by default**, rather than trapping the developer in
+multi-round multiple-choice interrogations or bureaucratic 5-section spec walls.
 
 ## When to use
 
-- **Explicit pre-implementation alignment**: the user runs `/plan-review` or
-  explicitly asks to align requirements, fill gaps in a rough idea, or
-  stress-test / review a design direction (`"方案评审"`, `"需求纠偏"`,
-  `"对齐需求"`, `"grill-me"`) before writing code.
-- **Both entry shapes are supported**:
-  - **Vague / partial requirement**: extract missing boundaries, hidden
-    dependencies, and edge cases, then resolve high-leverage directions cleanly.
-  - **Existing draft / proposed approach**: verify every premise against the
-    real codebase first, challenge conflicts or over-engineering candidly, and
-    converge on a corrected plan.
-
-Do **not** hijack routine, well-scoped coding requests with unsolicited
-multi-round interrogations when the user did not ask for `plan-review`.
-Do **not** write production code or drop unsolicited plan files to disk before
-the user signs off on the final plan.
+- Explicit pre-coding alignment (`/plan-review`, `"方案评审"`, `"需求纠偏"`,
+  `"对齐需求"`, `"复述需求"`, `"理清需求"`, `"in-your-own-words"`, `"grill-me"`)
+  on a **vague idea**, a **noisy bug/discussion thread**, or an **unverified
+  plan / prescribed solution**.
+- Do **not** hijack clear, routine coding prompts when the user did not invoke
+  this skill. Keep the alignment phase strictly **read-only**—never edit code,
+  drop unsolicited `PLAN*.md` files to disk, or run mutating commands before
+  approval.
 
 ---
 
-## Core principles
+## Core rules
 
-1. **Human owns direction; agent owns implementation details (`人抓大方向，AI 扛实施细节`).**
-   - Escalate **only high-leverage decisions** that materially change goals,
-     non-goals, user-visible behavior, public contracts/schemas, major
-     architectural trade-offs, security/data integrity, or irreversible choices.
-   - **Never** grill the user on low-level implementation trivia (function/file
-     naming, internal helper structure, routine boilerplate, or patterns already
-     established in the repository). Decide those autonomously using codebase
-     conventions and surface them transparently in the final plan.
+1. **Codebase facts first (`查事实归 AI，先读代码再开口`).**
+   - Before restating intent, critiquing a plan, or asking anything, read repo
+     rules (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `.cursor/rules/**`,
+     `.agents/rules/**`) and the actual relevant source files, shared helpers,
+     and callers read-only (dispatching a read-only subagent only if a broad,
+     unfamiliar subsystem truly requires it).
+   - **Never** ask the user facts verifiable from the repository.
 
-2. **Codebase-reality first & proactive course correction (`基于项目现实纠偏，先查代码库再开口`).**
-   - Finding **facts** is the agent's job, never the user's. Before asking a
-     single question or endorsing any feature proposal, read the real repository
-     structure, relevant source files, shared utilities, and project rule files
-     (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `.cursor/rules/**`,
-     `.agents/rules/**`).
-   - Never ask the user anything answerable by inspecting the codebase.
-   - If a proposed change conflicts with current architecture, duplicates an
-     existing abstraction, or has a materially simpler/safer path in the real
-     codebase, **point it out directly with code evidence and propose the
-     corrected path**—never blindly follow a mismatched premise.
+2. **Own-words intent playback & candid XY pushback (`大白话还原真问题，破 XY、反谄媚、禁复读`).**
+   - Always open by stating **in 2–3 plain sentences of your own words** (zero
+     copy-pasting or rewording of the user's prompt): **what actually hurts or
+     blocks now (`Problem`)** and **what observable outcome is wanted (`Goal`)**,
+     so any misreading surfaces immediately in one message.
+   - When the user prescribes a specific mechanism (`Y`), separate it from the
+     inferred root problem (`X`).
+   - Drop hollow praise (`"很好的想法！"`). Whenever a premise conflicts with
+     current architecture, reinvents an existing helper, or over-engineers,
+     state **what is wrong → concrete consequence → better alternative** with
+     clickable `file#L` evidence (`path/file:line` fallback). Push back once; if
+     the user knowingly keeps their call, respect it.
 
-3. **Proactive blind-spot hunting (`主动补盲区`).**
-   - Actively scan for what the user did **not** mention: edge cases,
-     upstream/downstream callers and dependencies, state transitions,
-     authz/permission boundaries, failure & retry semantics, data migration or
-     backward-compatibility constraints, and cross-module side effects.
-   - Cover routine defensive safeguards autonomously; raise only blind spots
-     that genuinely require a human product or architectural call.
+3. **Proposal-first; escalate ONLY true forks (`默认一屏给最优提案，严禁连环问卷审讯`).**
+   - Manage by exception, not by interrogation. **Own both low-level details**
+     (naming, file splits, repo conventions) **and secondary design choices that
+     have a clear recommended winner**—decide them with engineering judgment and
+     state them plainly in your proposal so the user only overrides what they
+     disagree with.
+   - Ask an upfront question **only** when a **true blocking fork** exists: 2+
+     viable paths materially change user-visible behavior, public contracts,
+     irreversible data/security risk, or the core meaning of a noisy prompt,
+     **and** codebase evidence cannot settle it.
+   - **Never** invent strawman options to pad a card, and **never** chain 3–5
+     serial interview rounds over sub-decisions. Most tasks have **0 forks**
+     (1-turn proposal) or **1 root fork** (at most 2 lightweight independent
+     ones → 2-turn closure max).
 
-4. **Anti-sycophancy & candid pushback (`反谄媚、敢指错`).**
-   - Drop hollow praise (`"很好的想法！"` / `"Great plan!"`).
-   - Whenever the user's direction, scope, or trade-off has a clear defect,
-     hidden blast radius, internal contradiction, or unnecessary
-     over-engineering, state **three things plainly**:
-     1. **What is wrong (`错在哪/隐患是什么`)**
-     2. **Concrete consequence (`会导致什么后果`)**
-     3. **Recommended alternative (`替代方案`)**
-   - Push back once with clear evidence; if the user knowingly keeps their
-     original call after hearing the consequence, respect their authority and
-     record it as an accepted trade-off.
-
-5. **Low-cognitive-load design-tree pacing (`设计树分层推进，默认单题聚焦`).**
-   - Model open high-leverage choices as a dependency-ordered **design tree**:
-     settle root/upstream decisions first before asking downstream branches
-     (never bundle a question whose premise depends on another open question).
-   - Ask **1 question per round by default** so each turn stays effortless to
-     scan and decide. Batch **at most 2–3** choices into a single card **only**
-     when they are genuinely lightweight, mutually independent preferences and
-     combining them clearly reduces tedious back-and-forth.
-   - **Every question MUST include a `(Recommended)` option** with concise
-     reasoning so the user can confirm in one click.
-   - Honor immediate convergence escapes (`"直接出方案"` / `"先按你建议出方案"` /
-     `"skip remaining, give me the plan"`): stop interviewing at once, adopt
-     your recommended defaults for remaining open branches, and tag them clearly
-     in the final plan.
-
-6. **Read-only alignment, in-chat Result-First plan, explicit sign-off (`只读对齐、对话交付、未拍板不动手`).**
-   - Keep the entire discovery and alignment phase strictly **read-only**—never
-     edit source code, install packages, run mutating scripts, or write
-     unsolicited `PLAN*.md` scratch files to disk (avoiding workspace clutter).
-   - Deliver the final concrete implementation plan **directly in chat** by
-     default (write a Markdown file on disk **only** if the user explicitly asks
-     to save one).
-   - Close with **one** single-step sign-off card; never begin editing code
-     until the user approves.
-
-7. **Reply in the user's language.**
-
----
-
-## Host adaptation
-
-- **Structured question tool (preferred):** if the host provides a structured
-  question prompt (`ask_question` in Antigravity, `AskUserQuestion` in Claude
-  Code, etc.), use it for every alignment round and the final sign-off gate.
-  Put the recommended answer first prefixed with `(Recommended)` and keep option
-  labels crisp, concrete, and mutually distinct.
-- **Plain-text fallback (hosts without structured prompts):** format each round
-  cleanly and stop immediately to wait for the user's reply:
-  ```text
-  ❓ **Q1 — <简短标题>**：<1–3 句背景或权衡说明>
-  1. **(Recommended)** <推荐选项> — <一句话理由>
-  2. <备选方案 B>
-  3. <备选方案 C>
-
-  ➡️ 回复「1 / 确认」直接采用推荐方案，或回复编号 / 补充你的想法（随时可说「直接出方案」）。
-  ```
-- **Codebase fact-finding:**
-  - For focused lookups (reading relevant modules, grep/symbol search, checking
-    rule files or `git status`), inspect **directly and read-only** in the
-    current session—fast and low-overhead.
-  - For large, unfamiliar cross-module subsystems where the host supports
-    read-only subagents (`research` / `Explore`), you may dispatch a read-only
-    exploration subagent without blocking independent root questions; fall back
-    to direct read-only reads when subagents are unavailable.
-- **Code references:** use **short filenames** (`orderService.ts`) in normal
-  prose to avoid visual clutter; attach clickable `file#L` anchors (or
-  `path/file:line`) whenever citing a real codebase conflict, existing reusable
-  component, or architectural pushback so the user can verify facts in one
-  click.
+4. **Proportional shape, zero boilerplate (`篇幅随复杂度自然伸缩，拒绝八股公文`).**
+   - Match length to task size: a small change takes **6–10 crisp lines**; a
+     cross-module change earns compact grouped bullets. **Never** force empty
+     headings, fixed 5-part templates, or repeat back choices the user just
+     clicked in bureaucratic prose.
+   - Use **short filenames** (`orderService.ts`) in normal prose; attach
+     clickable `file#L` links only where proving a conflict, existing helper, or
+     risk. Reply in the user's language.
 
 ---
 
 ## Workflow
 
-### Step 1: Silent Reality Check & Blind-Spot Diagnosis (`代码库现实盘点与盲区诊断`)
+### Step 1: Silent Reality, Intent & Fork Audit (Read-Only)
 
-Before asking any question:
+1. Read project rules and relevant modules/callers/schemas directly.
+2. Distill the **underlying problem & desired outcome** (`X` vs prescribed `Y`),
+   check existing abstractions and critical blind spots (edge cases, failure
+   semantics, permissions, compatibility), and identify the **smallest clean
+   change** that solves the problem.
+3. Apply the **Strict Fork Filter**:
+   - Repo facts → check yourself.
+   - Routine details & clear-winner trade-offs → decide yourself and fold into
+     the recommended proposal.
+   - Keep **only** genuine 50/50 product, contract, or root-intent forks (`0` in
+     most cases, `1`—rarely `2`—when genuinely split).
 
-1. **Inspect Project Reality (Read-Only)**:
-   - Read repository rule/guidance files if present (`CLAUDE.md`, `AGENTS.md`,
-     `GEMINI.md`, `.cursor/rules/**`, `.agents/rules/**`).
-   - Locate and read the actual files, entrypoints, shared abstractions, types,
-     or schemas relevant to the user's request—never speculate from filenames
-     alone.
-2. **Audit Assumptions, Conflicts & Blind Spots**:
-   - Check whether the user's request/draft contradicts existing architecture,
-     reinvents an existing helper/protocol, misses upstream callers or
-     downstream consumers, or introduces over-engineering.
-   - Identify genuine blind spots (boundary inputs, failure/rollback behavior,
-     permissions/isolation, migration/compatibility, concurrency).
-3. **Partition the Design Tree Internally**:
-   - **Facts (resolved by AI)** → never ask the user.
-   - **Implementation Details (owned by AI)** → decide using repo conventions;
-     never grill the user.
-   - **High-Leverage Open Decisions (owned by User)** → order by dependency
-     (root directions first, dependent branches after).
-4. **Smart Fast-Path (Skip Redundant Questions)**:
-   - If **zero** genuine high-leverage ambiguities exist AND **zero**
-     unconfirmed architectural conflicts remain, do **not** invent filler
-     questions—state your reality check findings briefly (including any blind
-     spots you proactively covered) and proceed straight to **Step 3**.
+### Step 2: One-Screen Alignment & Gate
 
----
+Choose the single clean response matching Step 1:
 
-### Step 2: High-Leverage Alignment Loop (`分层大方向点选对齐`)
+- **Mode A — Restate-Only Exit (`仅复述理清`，only when explicitly requested)**:
+  When the user asks *only* to clarify/restate a noisy thread or requirement
+  without planning or coding yet, output **2–3 plain lines of own-words problem
+  & goal** + any critical codebase reality/XY notes (`file#L` if needed), and
+  **stop with zero modal popups** so they can steer next.
 
-1. **Upfront Reality & Pushback Brief (Round 1 only, when applicable)**:
-   - If Step 1 uncovered codebase conflicts, reusable existing components,
-     critical blind spots, or a flawed/over-engineered premise, present a crisp
-     **2–4 bullet brief (`现状核查与纠偏提示`)** with concrete file evidence
-     right before Question 1 so the user has full context before deciding.
-2. **Walk the Design Tree Round by Round**:
-   - Ask **1 high-leverage question per round by default** (or **2–3** max
-     only when lightweight and completely independent).
-   - Keep every question focused on **direction, scope, contract, or
-     risk/trade-off**—include a clear `(Recommended)` first option and concise
-     trade-off note only when non-obvious.
-   - Recompute the tree after each answer: if a user answer introduces a new
-     codebase area or assumption, inspect the real files read-only before asking
-     the next branch.
-   - If the user picks a path with a serious flaw or contradiction, give **one**
-     concise candid pushback (cause → consequence → alternative) before moving
-     on; if reaffirmed, honor their call.
-   - Stop interviewing as soon as all high-leverage branches are settled—or
-     immediately if the user asks to jump straight to the plan (`"直接出方案"`).
+- **Mode B — Direct Proposal & Single Gate (`0 Blocking Forks` — Default 1-Turn Path)**:
+  Present **one scannable screen** without filler headings:
+  1. **本意还原** *(2–3 plain sentences, zero parroting)*: underlying problem +
+     target outcome *(if Step 1 found an XY mismatch, architectural conflict, or
+     reusable existing helper, state the candid course correction right here
+     with `file#L` proof)*.
+  2. **建议方案与验证** *(proportional bullets)*: smallest concrete changes
+     (short filenames), key defaults/safeguards you chose autonomously (so the
+     user can override any by exception), and how it will be verified.
+  3. **Single Pre-Code Gate** — open **one** `ask_question` card (or 3-line
+     numbered fallback with `(Recommended)` first when structured cards are
+     unavailable):
+     - `(Recommended) 确认，按此开始实施` (`Approve and implement now`)
+     - `微调部分点（在 Other 直接说明）` (`Tweak specific points in Other`)
+     - `仅保留方案，暂不改代码` (`Keep proposal only — do not edit code`)
 
----
+- **Mode C — Root Fork First (`1–2 True Blocking Forks` — 2-Turn Max)**:
+  1. Show **本意还原** *(2–3 plain sentences)* + any critical **现实纠偏**
+     (`file#L` evidence) at the top.
+  2. Ask **only** the 1 blocking fork (max 2 if lightweight & independent) via
+     `ask_question`, placing `(Recommended)` first with a 1-phrase reason—zero
+     strawman padding.
+  3. Once answered (or immediately if the user says `"直接按推荐出方案"`),
+     deliver the compact **建议方案与验证** + **Single Pre-Code Gate** *(skip
+     repeating already-settled background; if the user explicitly replies
+     `"按推荐直接开写"`, proceed straight to implementation)*.
 
-### Step 3: Result-First Concrete Implementation Plan & Single-Step Sign-Off (`具体实施方案交付与单步拍板`)
-
-Synthesize one clean, scannable, execution-ready plan **directly in chat** (no
-disk writes unless explicitly requested):
-
-1. **目标与非目标 (`Goal & Non-Goals`)** *(2–3 crisp lines)*
-   - What problem is being solved, expected outcome, and what is explicitly out
-     of scope.
-2. **已拍板的核心方向 (`Aligned Decisions`)**
-   - Bullet summary of settled high-leverage decisions *(tag any item
-     auto-settled via recommended default if the user ended early, e.g.
-     `[默认采纳推荐]`)*.
-3. **现实纠偏与补齐的盲区 (`Reality Corrections & Filled Blind Spots`)** *(Omit completely if none)*
-   - Codebase conflicts corrected, over-engineering/flawed paths avoided, and
-     edge cases/dependencies/failure semantics proactively covered (with short
-     file refs or `file#L` anchors).
-4. **AI 自主决策的实施细节 (`Agent-Owned Implementation Details`)**
-   - Concrete modules/files to create or modify (short filenames), existing
-     project abstractions reused, key internal design choices, and error/state
-     handling conventions—transparent so the user can spot-check without having
-     been grilled on minutiae.
-5. **分步实施与验收验证 (`Execution Steps & Verification`)**
-   - Ordered, actionable implementation steps (`1..N`).
-   - Concrete acceptance criteria and targeted verification commands/checks
-     *(written cleanly so they also serve as `Original Requirement Context` for
-     downstream `/agent-review` and `/work-report`)*.
-
-**Single-Step Sign-Off Gate (`单步拍板卡`)**:
-
-Immediately open **ONE** `ask_question` card (or numbered options if
-unavailable):
-
-- `(Recommended) 确认方案，立即按此开始实施` (`Approve plan and start implementation now`)
-- `微调方案中的部分内容（在 Other 说明要改的点）` (`Adjust part of the plan (describe edits in Other)`)
-- `仅保留方案，暂不动手写代码` (`Keep the plan as-is — do not edit code yet`)
-
-**Post-Gate Handling**:
-- **Approve**: execute the agreed implementation plan cleanly, run the planned
-  targeted checks, and never run `git commit` or `git push` unless explicitly
-  instructed.
-- **Adjust**: update only the requested parts of the plan in chat (re-checking
-  the codebase read-only if needed) and re-open the sign-off gate.
-- **Keep plan only**: stop cleanly with zero file edits. If the user explicitly
-  asks to save the plan to a Markdown file, write it only to the confirmed path.
-
----
-
-## Anti-patterns
-
-- Grilling the user on low-level implementation details (naming, helper splits,
-  routine boilerplate, or existing repo conventions) instead of owning those
-  decisions autonomously.
-- Asking the user facts that can be verified directly from the codebase, or
-  endorsing a proposed design without checking actual repo architecture first.
-- Sycophantic praise (`"很棒的想法！"`) or silent compliance when a direction
-  has clear defects, architectural conflicts, or unnecessary over-engineering.
-- Dumping 5–8 questions in a single overwhelming wall of text, or asking
-  downstream questions whose prerequisites are still unsettled.
-- Omitting a clear `(Recommended)` option or forcing the user to type free-form
-  answers when a structured question card is available.
-- Writing code or creating unsolicited `PLAN*.md` files on disk before the user
-  explicitly signs off on the final plan.
-- Hijacking simple, already-clear coding prompts with unsolicited `plan-review`
-  interrogations when the user did not invoke the skill.
+**After Approval**: implement cleanly, run the stated targeted checks, and never
+run `git commit` or `git push` unless explicitly instructed.
